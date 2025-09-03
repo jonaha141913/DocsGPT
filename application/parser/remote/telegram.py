@@ -1,4 +1,5 @@
 from langchain.document_loader import TelegramChatApiLoader
+
 from application.parser.remote.base import BaseRemote
 
 class TelegramChatApiRemote(BaseRemote):

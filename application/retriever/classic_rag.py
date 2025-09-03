@@ -1,9 +1,11 @@
 import logging
+
 from application.core.settings import settings
 from application.llm.llm_creator import LLMCreator
 from application.retriever.base import BaseRetriever
-
 from application.vectorstore.vector_creator import VectorCreator
+
+logger = logging.getLogger(__name__)
 
 
 class ClassicRAG(BaseRetriever):
@@ -25,15 +27,11 @@ class ClassicRAG(BaseRetriever):
         self.prompt = prompt
         self.chunks = chunks
         self.gpt_model = gpt_model
-        self.token_limit = (
-            token_limit
-            if token_limit
-            < settings.LLM_TOKEN_LIMITS.get(
+        self.token_limit = min(
+            token_limit,
+            settings.LLM_TOKEN_LIMITS.get(
                 self.gpt_model, settings.DEFAULT_MAX_HISTORY
-            )
-            else settings.LLM_TOKEN_LIMITS.get(
-                self.gpt_model, settings.DEFAULT_MAX_HISTORY
-            )
+            ),
         )
         self.user_api_key = user_api_key
         self.llm_name = llm_name
@@ -44,7 +42,7 @@ class ClassicRAG(BaseRetriever):
             user_api_key=self.user_api_key,
             decoded_token=decoded_token,
         )
-        self.vectorstore = source["active_docs"] if "active_docs" in source else None
+        self.vectorstore = source.get("active_docs")
         self.question = self._rephrase_query()
         self.decoded_token = decoded_token
 
@@ -75,7 +73,7 @@ class ClassicRAG(BaseRetriever):
             print(f"Rephrased query: {rephrased_query}")
             return rephrased_query if rephrased_query else self.original_question
         except Exception as e:
-            logging.error(f"Error rephrasing query: {e}", exc_info=True)
+            logger.exception(f"Error rephrasing query: {e}")
             return self.original_question
 
     def _get_data(self):

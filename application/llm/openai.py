@@ -79,22 +79,10 @@ class OpenAILLM(BaseLLM):
                                 content_parts.append(
                                     {"type": "text", "text": item["text"]}
                                 )
-                            elif (
-                                "type" in item
-                                and item["type"] == "text"
-                                and "text" in item
-                            ):
-                                content_parts.append(item)
-                            elif (
-                                "type" in item
-                                and item["type"] == "file"
-                                and "file" in item
-                            ):
-                                content_parts.append(item)
-                            elif (
-                                "type" in item
-                                and item["type"] == "image_url"
-                                and "image_url" in item
+                            elif "type" in item and (
+                                (item["type"] == "text" and "text" in item)
+                                or (item["type"] == "file" and "file" in item)
+                                or (item["type"] == "image_url" and "image_url" in item)
                             ):
                                 content_parts.append(item)
                             cleaned_messages.append(
@@ -239,8 +227,10 @@ class OpenAILLM(BaseLLM):
 
             return result
 
-        except Exception as e:
-            logging.error(f"Error preparing structured output format: {e}")
+        except Exception as e:  # noqa: BLE001
+            logging.getLogger(__name__).exception(
+                "Error preparing structured output format: %s", e
+            )
             return None
 
     def get_supported_attachment_types(self):
@@ -310,8 +300,8 @@ class OpenAILLM(BaseLLM):
                         }
                     )
                 except Exception as e:
-                    logging.error(
-                        f"Error processing image attachment: {e}", exc_info=True
+                    logging.getLogger(__name__).exception(
+                        "Error processing image attachment: %s", e
                     )
                     if "content" in attachment:
                         prepared_messages[user_message_index]["content"].append(
@@ -328,7 +318,9 @@ class OpenAILLM(BaseLLM):
                         {"type": "file", "file": {"file_id": file_id}}
                     )
                 except Exception as e:
-                    logging.error(f"Error uploading PDF to OpenAI: {e}", exc_info=True)
+                    logging.getLogger(__name__).exception(
+                        "Error uploading PDF to OpenAI: %s", e
+                    )
                     if "content" in attachment:
                         prepared_messages[user_message_index]["content"].append(
                             {
@@ -382,12 +374,14 @@ class OpenAILLM(BaseLLM):
         if not self.storage.file_exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
 
+        def _create_file(local_path, **kwargs):
+            with open(local_path, "rb") as f:
+                return self.client.files.create(file=f, purpose="assistants").id
+
         try:
             file_id = self.storage.process_file(
                 file_path,
-                lambda local_path, **kwargs: self.client.files.create(
-                    file=open(local_path, "rb"), purpose="assistants"
-                ).id,
+                _create_file,
             )
 
             from application.core.mongo_db import MongoDB
@@ -402,7 +396,9 @@ class OpenAILLM(BaseLLM):
 
             return file_id
         except Exception as e:
-            logging.error(f"Error uploading file to OpenAI: {e}", exc_info=True)
+            logging.getLogger(__name__).exception(
+                "Error uploading file to OpenAI: %s", e
+            )
             raise
 
 

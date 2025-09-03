@@ -1,7 +1,10 @@
+from urllib.parse import urlparse
+
 import requests
 from markdownify import markdownify
+
 from application.agents.tools.base import Tool
-from urllib.parse import urlparse
+
 
 class ReadWebpageTool(Tool):
     """
@@ -50,7 +53,7 @@ class ReadWebpageTool(Tool):
 
         except requests.exceptions.RequestException as e:
             return f"Error fetching URL {url}: {e}"
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return f"Error processing URL {url}: {e}"
 
     def get_actions_metadata(self):
