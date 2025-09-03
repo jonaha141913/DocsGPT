@@ -1,7 +1,7 @@
-import logging
 import datetime
-from typing import Optional, Dict, Any
+import logging
 
+from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
@@ -31,7 +31,7 @@ class GoogleDriveAuth(BaseConnectorAuth):
 
 
 
-    def get_authorization_url(self, state: Optional[str] = None) -> str:
+    def get_authorization_url(self, state: str | None = None) -> str:
         try:
             flow = Flow.from_client_config(
                 {
@@ -60,7 +60,7 @@ class GoogleDriveAuth(BaseConnectorAuth):
             logging.error(f"Error generating authorization URL: {e}")
             raise
     
-    def exchange_code_for_tokens(self, authorization_code: str) -> Dict[str, Any]:
+    def exchange_code_for_tokens(self, authorization_code: str) -> dict[str, Any]:
         try:
             if not authorization_code:
                 raise ValueError("Authorization code is required")
@@ -116,7 +116,7 @@ class GoogleDriveAuth(BaseConnectorAuth):
             logging.error(f"Error exchanging code for tokens: {e}")
             raise
     
-    def refresh_access_token(self, refresh_token: str) -> Dict[str, Any]:
+    def refresh_access_token(self, refresh_token: str) -> dict[str, Any]:
         try:
             if not refresh_token:
                 raise ValueError("Refresh token is required")
@@ -145,7 +145,7 @@ class GoogleDriveAuth(BaseConnectorAuth):
             logging.error(f"Error refreshing access token: {e}", exc_info=True)
             raise
     
-    def create_credentials_from_token_info(self, token_info: Dict[str, Any]) -> Credentials:
+    def create_credentials_from_token_info(self, token_info: dict[str, Any]) -> Credentials:
         from application.core.settings import settings
 
         access_token = token_info.get('access_token')
@@ -208,7 +208,7 @@ class GoogleDriveAuth(BaseConnectorAuth):
 
         return True
     
-    def get_token_info_from_session(self, session_token: str) -> Dict[str, Any]:
+    def get_token_info_from_session(self, session_token: str) -> dict[str, Any]:
         try:
             from application.core.mongo_db import MongoDB
             from application.core.settings import settings
@@ -264,5 +264,5 @@ class GoogleDriveAuth(BaseConnectorAuth):
             logging.error(f"HTTP error validating credentials: {e}")
             return False
         except Exception as e:
-            logging.error(f"Error validating credentials: {e}")
+            logging.error(f"Unexpected error validating credentials: {e}")
             return False

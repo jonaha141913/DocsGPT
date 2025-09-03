@@ -6,7 +6,7 @@ interface for external knowledge base connectors.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from application.parser.schema.base import Document
 
@@ -20,7 +20,7 @@ class BaseConnectorAuth(ABC):
     """
     
     @abstractmethod
-    def get_authorization_url(self, state: Optional[str] = None) -> str:
+    def get_authorization_url(self, state: str | None = None) -> str:
         """
         Generate authorization URL for OAuth flows.
         
@@ -30,10 +30,9 @@ class BaseConnectorAuth(ABC):
         Returns:
             Authorization URL
         """
-        pass
     
     @abstractmethod
-    def exchange_code_for_tokens(self, authorization_code: str) -> Dict[str, Any]:
+    def exchange_code_for_tokens(self, authorization_code: str) -> dict[str, Any]:
         """
         Exchange authorization code for access tokens.
         
@@ -43,10 +42,9 @@ class BaseConnectorAuth(ABC):
         Returns:
             Dictionary containing token information
         """
-        pass
     
     @abstractmethod
-    def refresh_access_token(self, refresh_token: str) -> Dict[str, Any]:
+    def refresh_access_token(self, refresh_token: str) -> dict[str, Any]:
         """
         Refresh an expired access token.
         
@@ -56,10 +54,9 @@ class BaseConnectorAuth(ABC):
         Returns:
             Dictionary containing refreshed token information
         """
-        pass
     
     @abstractmethod
-    def is_token_expired(self, token_info: Dict[str, Any]) -> bool:
+    def is_token_expired(self, token_info: dict[str, Any]) -> bool:
         """
         Check if a token is expired.
         
@@ -69,7 +66,6 @@ class BaseConnectorAuth(ABC):
         Returns:
             True if token is expired, False otherwise
         """
-        pass
 
 
 class BaseConnectorLoader(ABC):
@@ -88,7 +84,6 @@ class BaseConnectorLoader(ABC):
         Args:
             session_token: Authentication session token
         """
-        pass
     
     @abstractmethod
     def load_data(self, inputs: Dict[str, Any]) -> List[Document]:

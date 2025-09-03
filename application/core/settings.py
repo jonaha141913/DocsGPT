@@ -10,9 +10,9 @@ current_dir = os.path.dirname(
 
 
 class Settings(BaseSettings):
-    AUTH_TYPE: Optional[str] = None  # simple_jwt, session_jwt, or None
+    AUTH_TYPE: str | None = None  # simple_jwt, session_jwt, or None
     LLM_PROVIDER: str = "docsgpt"
-    LLM_NAME: Optional[str] = (
+    LLM_NAME: str | None = (
         None  # if LLM_PROVIDER is openai, LLM_NAME can be gpt-4 or gpt-3.5-turbo
     )
     EMBEDDINGS_NAME: str = "huggingface_sentence-transformers/all-mpnet-base-v2"
@@ -36,14 +36,14 @@ class Settings(BaseSettings):
     )
     RETRIEVERS_ENABLED: list = ["classic_rag"]
     AGENT_NAME: str = "classic"
-    FALLBACK_LLM_PROVIDER: Optional[str] = None  # provider for fallback llm
-    FALLBACK_LLM_NAME: Optional[str] = None  # model name for fallback llm
-    FALLBACK_LLM_API_KEY: Optional[str] = None  # api key for fallback llm
+    FALLBACK_LLM_PROVIDER: str | None = None  # provider for fallback llm
+    FALLBACK_LLM_NAME: str | None = None  # model name for fallback llm
+    FALLBACK_LLM_API_KEY: str | None = None  # api key for fallback llm
 
     # Google Drive integration
-    GOOGLE_CLIENT_ID: Optional[str] = None # Replace with your actual Google OAuth client ID
-    GOOGLE_CLIENT_SECRET: Optional[str] = None# Replace with your actual Google OAuth client secret
-    CONNECTOR_REDIRECT_BASE_URI: Optional[str] = "http://127.0.0.1:7091/api/connectors/callback" 
+    GOOGLE_CLIENT_ID: str | None = None # Replace with your actual Google OAuth client ID
+    GOOGLE_CLIENT_SECRET: str | None = None# Replace with your actual Google OAuth client secret
+    CONNECTOR_REDIRECT_BASE_URI: str | None = "http://127.0.0.1:7091/api/connectors/callback" 
     ##append ?provider={provider_name} in your Provider console like http://127.0.0.1:7091/api/connectors/callback?provider=google_drive
 
 
@@ -52,24 +52,24 @@ class Settings(BaseSettings):
 
     API_URL: str = "http://localhost:7091"  # backend url for celery worker
 
-    API_KEY: Optional[str] = None  # LLM api key
-    EMBEDDINGS_KEY: Optional[str] = (
+    API_KEY: str | None = None  # LLM api key
+    EMBEDDINGS_KEY: str | None = (
         None  # api key for embeddings (if using openai, just copy API_KEY)
     )
-    OPENAI_API_BASE: Optional[str] = None  # azure openai api base url
-    OPENAI_API_VERSION: Optional[str] = None  # azure openai api version
-    AZURE_DEPLOYMENT_NAME: Optional[str] = None  # azure deployment name for answering
-    AZURE_EMBEDDINGS_DEPLOYMENT_NAME: Optional[str] = (
+    OPENAI_API_BASE: str | None = None  # azure openai api base url
+    OPENAI_API_VERSION: str | None = None  # azure openai api version
+    AZURE_DEPLOYMENT_NAME: str | None = None  # azure deployment name for answering
+    AZURE_EMBEDDINGS_DEPLOYMENT_NAME: str | None = (
         None  # azure deployment name for embeddings
     )
-    OPENAI_BASE_URL: Optional[str] = (
+    OPENAI_BASE_URL: str | None = (
         None  # openai base url for open ai compatable models
     )
 
     # elasticsearch
-    ELASTIC_CLOUD_ID: Optional[str] = None  # cloud id for elasticsearch
-    ELASTIC_USERNAME: Optional[str] = None  # username for elasticsearch
-    ELASTIC_PASSWORD: Optional[str] = None  # password for elasticsearch
+    ELASTIC_CLOUD_ID: str | None = None  # cloud id for elasticsearch
+    ELASTIC_USERNAME: str | None = None  # username for elasticsearch
+    ELASTIC_PASSWORD: str | None = None  # password for elasticsearch
     ELASTIC_URL: Optional[str] = None  # url for elasticsearch
     ELASTIC_INDEX: Optional[str] = "docsgpt"  # index name for elasticsearch
 
