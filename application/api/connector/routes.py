@@ -2,7 +2,12 @@ import datetime
 import json
 import logging
 
-
+from application.api import api
+from application.api.user.tasks import ingest_connector_task
+from application.core.mongo_db import MongoDB
+from application.core.settings import settings
+from application.parser.connectors.connector_creator import ConnectorCreator
+from application.utils import check_required_fields
 from bson.objectid import ObjectId
 from flask import (
     Blueprint,
@@ -12,24 +17,6 @@ from flask import (
     request
 )
 from flask_restx import fields, Namespace, Resource
-
-
-
-
-from application.api.user.tasks import (
-    ingest_connector_task,
-)
-from application.core.mongo_db import MongoDB
-from application.core.settings import settings
-from application.api import api
-
-
-from application.utils import (
-    check_required_fields
-)
-
-
-from application.parser.connectors.connector_creator import ConnectorCreator
 
 
 
@@ -126,9 +113,7 @@ class UploadConnector(Resource):
                 sync_frequency=sync_frequency
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error uploading connector source: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error uploading connector source: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True, "task_id": task.id}), 200)
 
@@ -159,7 +144,7 @@ class ConnectorTaskStatus(Resource):
             ):
                 task_meta = str(task_meta)
         except Exception as err:
-            current_app.logger.error(f"Error getting task status: {err}", exc_info=True)
+            current_app.logger.exception(f"Error getting task status: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"status": task.status, "result": task_meta}), 200)
 
@@ -187,7 +172,7 @@ class ConnectorSources(Resource):
                     "syncFrequency": source.get("sync_frequency", ""),
                 })
         except Exception as err:
-            current_app.logger.error(f"Error retrieving connector sources: {err}", exc_info=True)
+            current_app.logger.exception(f"Error retrieving connector sources: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(connector_sources), 200)
 
@@ -216,9 +201,7 @@ class DeleteConnectorSource(Resource):
                     jsonify({"success": False, "message": "Source not found"}), 404
                 )
         except Exception as err:
-            current_app.logger.error(
-                f"Error deleting connector source: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error deleting connector source: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -245,7 +228,7 @@ class ConnectorAuth(Resource):
                 "state": state
             }), 200)
         except Exception as e:
-            current_app.logger.error(f"Error generating connector auth URL: {e}")
+            current_app.logger.exception(f"Error generating connector auth URL: {e}")
             return make_response(jsonify({"success": False, "error": str(e)}), 500)
 
 

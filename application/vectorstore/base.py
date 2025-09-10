@@ -1,8 +1,10 @@
-from abc import ABC, abstractmethod
 import os
-from sentence_transformers import SentenceTransformer
-from langchain_openai import OpenAIEmbeddings
+
+from abc import ABC, abstractmethod
+
 from application.core.settings import settings
+from langchain_openai import OpenAIEmbeddings
+from sentence_transformers import SentenceTransformer
 
 class EmbeddingsWrapper:
     def __init__(self, model_name, *args, **kwargs):
@@ -26,10 +28,12 @@ class EmbeddingsWrapper:
 
 
 class EmbeddingsSingleton:
-    _instances = {}
+    _instances = None
 
     @staticmethod
     def get_instance(embeddings_name, *args, **kwargs):
+        if EmbeddingsSingleton._instances is None:
+            EmbeddingsSingleton._instances = {}
         if embeddings_name not in EmbeddingsSingleton._instances:
             EmbeddingsSingleton._instances[embeddings_name] = EmbeddingsSingleton._create_instance(
                 embeddings_name, *args, **kwargs

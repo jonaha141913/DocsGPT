@@ -3,11 +3,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
-
-from bson.dbref import DBRef
-
-from bson.objectid import ObjectId
+from typing import Any, Optional
 
 from application.agents.agent_creator import AgentCreator
 from application.api.answer.services.conversation_service import ConversationService
@@ -15,6 +11,8 @@ from application.core.mongo_db import MongoDB
 from application.core.settings import settings
 from application.retriever.retriever_creator import RetrieverCreator
 from application.utils import get_gpt_model, limit_chat_history
+from bson.dbref import DBRef
+from bson.objectid import ObjectId
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +53,7 @@ def get_prompt(prompt_id: str, prompts_collection=None) -> str:
 
 class StreamProcessor:
     def __init__(
-        self, request_data: Dict[str, Any], decoded_token: Optional[Dict[str, Any]]
+        self, request_data: dict[str, Any], decoded_token: Optional[dict[str, Any]]
     ):
         mongo = MongoDB.get_client()
         self.db = mongo[settings.MONGO_DB_NAME]
@@ -130,19 +128,19 @@ class StreamProcessor:
                 if attachment_doc:
                     attachments.append(attachment_doc)
             except Exception as e:
-                logger.error(
-                    f"Error retrieving attachment {attachment_id}: {e}", exc_info=True
+                logger.exception(
+                    f"Error retrieving attachment {attachment_id}: {e}"
                 )
         return attachments
 
-    def _get_agent_key(self, agent_id: Optional[str], user_id: Optional[str]) -> tuple:
+    def _get_agent_key(self, agent_id: str | None, user_id: str | None) -> tuple:
         """Get API key for agent with access control"""
         if not agent_id:
             return None, False, None
         try:
             agent = self.agents_collection.find_one({"_id": ObjectId(agent_id)})
             if agent is None:
-                raise Exception("Agent not found")
+                raise ValueError("Agent not found")
             is_owner = agent.get("user") == user_id
             is_shared_with_user = agent.get(
                 "shared_publicly", False
@@ -161,13 +159,13 @@ class StreamProcessor:
                 )
             return str(agent["key"]), not is_owner, agent.get("shared_token")
         except Exception as e:
-            logger.error(f"Error in get_agent_key: {str(e)}", exc_info=True)
+            logger.exception(f"Error in get_agent_key: {str(e)}")
             raise
 
-    def _get_data_from_api_key(self, api_key: str) -> Dict[str, Any]:
+    def _get_data_from_api_key(self, api_key: str) -> dict[str, Any]:
         data = self.agents_collection.find_one({"key": api_key})
         if not data:
-            raise Exception("Invalid API Key, please generate a new key", 401)
+            raise ValueError("Invalid API Key, please generate a new key")
         source = data.get("source")
         if isinstance(source, DBRef):
             source_doc = self.db.dereference(source)

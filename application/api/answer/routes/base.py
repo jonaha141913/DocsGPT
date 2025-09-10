@@ -1,7 +1,7 @@
 import datetime
 import json
 import logging
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Generator, Optional
 
 from flask import Response
 from flask_restx import Namespace
@@ -30,7 +30,7 @@ class BaseAnswerResource:
         self.conversation_service = ConversationService()
 
     def validate_request(
-        self, data: Dict[str, Any], require_conversation_id: bool = False
+        self, data: dict[str, Any], require_conversation_id: bool = False
     ) -> Optional[Response]:
         """Common request validation"""
         required_fields = ["question"]
@@ -47,11 +47,11 @@ class BaseAnswerResource:
         retriever: Any,
         conversation_id: Optional[str],
         user_api_key: Optional[str],
-        decoded_token: Dict[str, Any],
+        decoded_token: dict[str, Any],
         isNoneDoc: bool = False,
         index: Optional[int] = None,
         should_save_conversation: bool = True,
-        attachment_ids: Optional[List[str]] = None,
+        attachment_ids: Optional[list[str]] = None,
         agent_id: Optional[str] = None,
         is_shared_usage: bool = False,
         shared_token: Optional[str] = None,
@@ -192,7 +192,7 @@ class BaseAnswerResource:
             data = json.dumps({"type": "end"})
             yield f"data: {data}\n\n"
         except Exception as e:
-            logger.error(f"Error in stream: {str(e)}", exc_info=True)
+            logger.exception(f"Error in stream: {str(e)}")
             data = json.dumps(
                 {
                     "type": "error",

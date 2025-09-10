@@ -1,7 +1,7 @@
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, List, Optional
+from typing import Generator, Optional
 
 from bson.objectid import ObjectId
 
@@ -39,10 +39,10 @@ class BaseAgent(ABC):
         self.prompt = prompt
         self.decoded_token = decoded_token or {}
         self.user: str = decoded_token.get("sub")
-        self.tool_config: Dict = {}
-        self.tools: List[Dict] = []
-        self.tool_calls: List[Dict] = []
-        self.chat_history: List[Dict] = chat_history if chat_history is not None else []
+        self.tool_config: dict = {}
+        self.tools: list[dict] = []
+        self.tool_calls: list[dict] = []
+        self.chat_history: list[dict] = chat_history if chat_history is not None else []
         self.llm = LLMCreator.create_llm(
             llm_name,
             api_key=api_key,
@@ -64,10 +64,10 @@ class BaseAgent(ABC):
     @abstractmethod
     def _gen_inner(
         self, query: str, retriever: BaseRetriever, log_context: LogContext
-    ) -> Generator[Dict, None, None]:
+    ) -> Generator[dict, None, None]:
         pass
 
-    def _get_tools(self, api_key: str = None) -> Dict[str, Dict]:
+    def _get_tools(self, api_key: str = None) -> dict[str, dict]:
         mongo = MongoDB.get_client()
         db = mongo[settings.MONGO_DB_NAME]
         agents_collection = db["agents"]
@@ -97,8 +97,8 @@ class BaseAgent(ABC):
 
         return {str(i): tool for i, tool in enumerate(user_tools)}
 
-    def _build_tool_parameters(self, action):
-        params = {"type": "object", "properties": {}, "required": []}
+    def _build_tool_parameters(self, action: dict) -> dict:
+        params: dict = {"type": "object", "properties": {}, "required": []}
         for param_type in ["query_params", "headers", "body", "parameters"]:
             if param_type in action and action[param_type].get("properties"):
                 for k, v in action[param_type]["properties"].items():
@@ -112,8 +112,8 @@ class BaseAgent(ABC):
                         params["required"].append(k)
         return params
 
-    def _prepare_tools(self, tools_dict):
-        self.tools = [
+    def _prepare_tools(self, tools_dict: dict) -> None:
+        self.tools: list[dict] = [
             {
                 "type": "function",
                 "function": {
@@ -261,8 +261,8 @@ class BaseAgent(ABC):
         self,
         system_prompt: str,
         query: str,
-        retrieved_data: List[Dict],
-    ) -> List[Dict]:
+        retrieved_data: list[dict],
+    ) -> list[dict]:
         docs_together = "\n".join([doc["text"] for doc in retrieved_data])
         p_chat_combine = system_prompt.replace("{summaries}", docs_together)
         messages_combine = [{"role": "system", "content": p_chat_combine}]
@@ -304,14 +304,14 @@ class BaseAgent(ABC):
         retriever: BaseRetriever,
         query: str,
         log_context: Optional[LogContext] = None,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         retrieved_data = retriever.search(query)
         if log_context:
             data = build_stack_data(retriever, exclude_attributes=["llm"])
             log_context.stacks.append({"component": "retriever", "data": data})
         return retrieved_data
 
-    def _llm_gen(self, messages: List[Dict], log_context: Optional[LogContext] = None):
+    def _llm_gen(self, messages: list[dict], log_context: Optional[LogContext] = None):
         gen_kwargs = {"model": self.gpt_model, "messages": messages}
 
         if (
@@ -345,10 +345,10 @@ class BaseAgent(ABC):
     def _llm_handler(
         self,
         resp,
-        tools_dict: Dict,
-        messages: List[Dict],
+        tools_dict: dict,
+        messages: list[dict],
         log_context: Optional[LogContext] = None,
-        attachments: Optional[List[Dict]] = None,
+        attachments: Optional[list[dict]] = None,
     ):
         resp = self.llm_handler.process_message_flow(
             self, resp, tools_dict, messages, attachments, True
