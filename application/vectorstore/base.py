@@ -1,7 +1,9 @@
-from abc import ABC, abstractmethod
 import os
-from sentence_transformers import SentenceTransformer
+from abc import ABC, abstractmethod
+
 from langchain_openai import OpenAIEmbeddings
+from sentence_transformers import SentenceTransformer
+
 from application.core.settings import settings
 
 class EmbeddingsWrapper:
@@ -26,7 +28,7 @@ class EmbeddingsWrapper:
 
 
 class EmbeddingsSingleton:
-    _instances = {}
+    _instances: dict = {}
 
     @staticmethod
     def get_instance(embeddings_name, *args, **kwargs):
@@ -77,7 +79,7 @@ class BaseVectorStore(ABC):
         elif embeddings_name == "huggingface_sentence-transformers/all-mpnet-base-v2":
             if os.path.exists("./models/all-mpnet-base-v2"):
                 embedding_instance = EmbeddingsSingleton.get_instance(
-                    embeddings_name = "./models/all-mpnet-base-v2",
+                    "./models/all-mpnet-base-v2",
                 )
             else:
                 embedding_instance = EmbeddingsSingleton.get_instance(

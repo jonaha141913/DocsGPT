@@ -1,7 +1,8 @@
-from typing import List, Optional
 import importlib
-from application.vectorstore.base import BaseVectorStore
+from typing import Optional
+
 from application.core.settings import settings
+from application.vectorstore.base import BaseVectorStore
 
 class LanceDBVectorStore(BaseVectorStore):
     """Class for LanceDB Vector Store integration."""

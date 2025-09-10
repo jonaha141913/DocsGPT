@@ -3,11 +3,11 @@ import os
 import re
 import uuid
 
+from application.core.settings import settings
+
 import tiktoken
 from flask import jsonify, make_response
 from werkzeug.utils import secure_filename
-
-from application.core.settings import settings
 
 
 _encoding = None
@@ -119,8 +119,8 @@ def validate_required_fields(data, required_fields):
     return None
 
 
-def get_hash(data):
-    return hashlib.md5(data.encode(), usedforsecurity=False).hexdigest()
+def get_hash(data: str) -> str:
+    return hashlib.md5(data.encode()).hexdigest()
 
 
 def limit_chat_history(history, max_token_limit=None, gpt_model="docsgpt"):
@@ -162,9 +162,9 @@ def limit_chat_history(history, max_token_limit=None, gpt_model="docsgpt"):
 
 def validate_function_name(function_name):
     """Validates if a function name matches the allowed pattern."""
-    if not re.match(r"^[a-zA-Z0-9_-]+$", function_name):
-        return False
-    return True
+    if re.match(r"^[a-zA-Z0-9_-]+$", function_name):
+        return True
+    return False
 
 
 def generate_image_url(image_path):

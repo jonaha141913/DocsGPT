@@ -1,5 +1,5 @@
-from application.vectorstore.base import BaseVectorStore
 from application.core.settings import settings
+from application.vectorstore.base import BaseVectorStore
 from application.vectorstore.document_class import Document
 
 
@@ -29,6 +29,7 @@ class ElasticsearchStore(BaseVectorStore):
         self.docsearch = ElasticsearchStore._es_connection
 
     def connect_to_elasticsearch(
+        self,
         *,
         es_url = None,
         cloud_id = None,
@@ -69,7 +70,7 @@ class ElasticsearchStore(BaseVectorStore):
         try:
             es_client.info()
         except Exception as e:
-            raise e
+            raise
 
         return es_client
 
@@ -153,7 +154,6 @@ class ElasticsearchStore(BaseVectorStore):
         
         bulk_kwargs = bulk_kwargs or {}
         import uuid
-        embeddings = []
         ids = ids or [str(uuid.uuid4()) for _ in texts]
         requests = []
         embeddings = self._get_embeddings(settings.EMBEDDINGS_NAME, self.embeddings_key)

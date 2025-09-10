@@ -1,7 +1,8 @@
-import unittest
 import json
+import unittest
 from unittest.mock import patch, MagicMock
-from application.cache import gen_cache_key, stream_cache, gen_cache
+
+from application.cache import gen_cache, gen_cache_key, stream_cache
 from application.utils import get_hash
 
 
@@ -61,7 +62,7 @@ def test_gen_cache_miss(mock_make_redis):
     mock_redis_instance.get.return_value = None  # Simulate a cache miss
 
     @gen_cache
-    def mock_function(self, model, messages, steam, tools):
+    def mock_function(self, model, messages, stream, tools):
         return "new_result"
 
     messages = [
