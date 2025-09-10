@@ -1,6 +1,6 @@
 import logging
-from application.vectorstore.base import BaseVectorStore
 from application.core.settings import settings
+from application.vectorstore.base import BaseVectorStore
 from application.vectorstore.document_class import Document
 
 
@@ -60,13 +60,13 @@ class QdrantStore(BaseVectorStore):
             except Exception as index_error:
                 # Index might already exist, which is fine
                 if "already exists" not in str(index_error).lower():
-                    logging.warning(f"Could not create index for metadata.source_id: {index_error}")
+                    logger.warning(f"Could not create index for metadata.source_id: {index_error}")
                     
         except Exception as e:
-            logging.warning(f"Could not check for collection: {e}")
+            logger.warning(f"Could not check for collection: {e}")
 
     def search(self, *args, **kwargs):
-        return self._docsearch.similarity_search(filter=self._filter, *args, **kwargs)
+        return self._docsearch.similarity_search(*args, filter=self._filter, **kwargs)
 
     def add_texts(self, *args, **kwargs):
         return self._docsearch.add_texts(*args, **kwargs)
@@ -76,7 +76,7 @@ class QdrantStore(BaseVectorStore):
 
     def delete_index(self, *args, **kwargs):
         return self._docsearch.client.delete(
-            collection_name=settings.QDRANT_COLLECTION_NAME, points_selector=self._filter
+            *args, collection_name=settings.QDRANT_COLLECTION_NAME, points_selector=self._filter
         )
 
     def get_chunks(self):
@@ -104,7 +104,7 @@ class QdrantStore(BaseVectorStore):
                     break
             return chunks
         except Exception as e:
-            logging.error(f"Error getting chunks: {e}", exc_info=True)
+            logger.error(f"Error getting chunks: {e}", exc_info=True)
             return []
 
     def add_chunk(self, text, metadata=None):
@@ -132,5 +132,5 @@ class QdrantStore(BaseVectorStore):
             )
             return True
         except Exception as e:
-            logging.error(f"Error deleting chunk: {e}", exc_info=True)
+            logger.error(f"Error deleting chunk: {e}", exc_info=True)
             return False

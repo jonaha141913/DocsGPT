@@ -1,5 +1,5 @@
-from application.vectorstore.base import BaseVectorStore
 from application.core.settings import settings
+from application.vectorstore.base import BaseVectorStore
 from application.vectorstore.document_class import Document
 
 
@@ -66,10 +66,7 @@ class ElasticsearchStore(BaseVectorStore):
         es_client = elasticsearch.Elasticsearch(
             **connection_params,
         )
-        try:
-            es_client.info()
-        except Exception as e:
-            raise e
+        es_client.info()
 
         return es_client
 
@@ -194,9 +191,6 @@ class ElasticsearchStore(BaseVectorStore):
                 )
                 return ids
             except BulkIndexError as e:
-                print(f"Error adding texts: {e}")
-                firstError = e.errors[0].get("index", {}).get("error", {})
-                print(f"First error reason: {firstError.get('reason')}")
                 raise e
 
         else:

@@ -1,15 +1,14 @@
-import os
-import re
-import logging
 import aiohttp
 import discord
-from discord.ext import commands
 import dotenv
+import logging
+import os
+import re
+from discord.ext import commands
 
 dotenv.load_dotenv()
 
 # Enable logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Bot configuration
@@ -50,7 +49,7 @@ def chunk_string(text, max_length=2000):
 
 def escape_markdown(text):
     """Escapes Discord markdown characters."""
-    escape_chars = r'\*_$$$$()~>#+-=|{}.!'
+    escape_chars = r'\*_`$()~>#+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
 def split_string(input_str):

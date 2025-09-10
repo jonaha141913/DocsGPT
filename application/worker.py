@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import datetime
 import json
 import logging
@@ -79,7 +80,7 @@ def extract_zip_recursive(zip_path, extract_to, current_depth=0, max_depth=5):
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_to)
         os.remove(zip_path)  # Remove the zip file after extracting
-    except Exception as e:
+    except zipfile.BadZipFile as e:
         logging.error(f"Error extracting zip file {zip_path}: {e}", exc_info=True)
         return
     # Check for nested zip files and extract them
@@ -100,7 +101,7 @@ def download_file(url, params, dest_path):
         with open(dest_path, "wb") as f:
             f.write(response.content)
     except requests.RequestException as e:
-        logging.error(f"Error downloading file: {e}")
+        logger.error(f"Error downloading file: {e}")
         raise
 
 
@@ -112,11 +113,11 @@ def upload_index(full_path, file_data):
             pkl_path = full_path + "/index.pkl"
 
             if not os.path.exists(faiss_path):
-                logging.error(f"FAISS index file not found: {faiss_path}")
+                logger.error(f"FAISS index file not found: {faiss_path}")
                 raise FileNotFoundError(f"FAISS index file not found: {faiss_path}")
 
             if not os.path.exists(pkl_path):
-                logging.error(f"FAISS pickle file not found: {pkl_path}")
+                logger.error(f"FAISS pickle file not found: {pkl_path}")
                 raise FileNotFoundError(f"FAISS pickle file not found: {pkl_path}")
 
             files = {
@@ -134,7 +135,7 @@ def upload_index(full_path, file_data):
             )
         response.raise_for_status()
     except (requests.RequestException, FileNotFoundError) as e:
-        logging.error(f"Error uploading index: {e}")
+        logger.error(f"Error uploading index: {e}")
         raise
     finally:
         if settings.VECTOR_STORE == "faiss" and files is not None:
@@ -206,7 +207,7 @@ def run_agent_logic(agent_config, input_data):
         logging.info(f"Agent response: {result}")
         return result
     except Exception as e:
-        logging.error(f"Error in run_agent_logic: {e}", exc_info=True)
+        logger.error(f"Error in run_agent_logic: {e}", exc_info=True)
         raise
 
 
@@ -794,7 +795,7 @@ def attachment_worker(self, file_info, user):
             "metadata": metadata,
         }
     except Exception as e:
-        logging.error(
+        logger.error(
             f"Error processing file {filename}: {e}",
             extra={"user": user},
             exc_info=True,
@@ -826,20 +827,20 @@ def agent_webhook_worker(self, agent_id, payload):
             raise ValueError(f"Agent with ID {agent_id} not found.")
         input_data = json.dumps(payload)
     except Exception as e:
-        logging.error(f"Error processing agent webhook: {e}", exc_info=True)
+        logger.error(f"Error processing agent webhook: {e}", exc_info=True)
         return {"status": "error", "error": str(e)}
     self.update_state(state="PROGRESS", meta={"current": 50})
     try:
         result = run_agent_logic(agent_config, input_data)
     except Exception as e:
-        logging.error(f"Error running agent logic: {e}", exc_info=True)
+        logger.error(f"Error running agent logic: {e}", exc_info=True)
         return {"status": "error", "error": str(e)}
     finally:
         self.update_state(state="PROGRESS", meta={"current": 100})
-        logging.info(
+        logger.info(
             f"Webhook processed for agent {agent_id}", extra={"agent_id": agent_id}
         )
-        return {"status": "success", "result": result}
+    return {"status": "success", "result": result}
 
 
 def ingest_connector(
@@ -872,7 +873,7 @@ def ingest_connector(
         doc_id: Document ID for sync operations (required when operation_mode="sync")
         sync_frequency: How often to sync ("never", "daily", "weekly", "monthly")
     """
-    logging.info(f"Starting remote ingestion from {source_type} for user: {user}, job: {job_name}")
+    logger.info(f"Starting remote ingestion from {source_type} for user: {user}, job: {job_name}")
     self.update_state(state="PROGRESS", meta={"current": 1})
     
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -1009,5 +1010,5 @@ def ingest_connector(
             }
             
         except Exception as e:
-            logging.error(f"Error during remote ingestion: {e}", exc_info=True)
+            logger.error(f"Error during remote ingestion: {e}", exc_info=True)
             raise

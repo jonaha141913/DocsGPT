@@ -1,5 +1,6 @@
-import unittest
 from application.llm.openai import OpenAILLM
+
+import unittest
 
 class TestOpenAILLM(unittest.TestCase):
 
