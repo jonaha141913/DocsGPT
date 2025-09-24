@@ -1,7 +1,7 @@
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, List, Optional
+from typing import Generator, Optional
 
 from bson.objectid import ObjectId
 

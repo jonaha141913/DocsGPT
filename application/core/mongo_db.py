@@ -1,5 +1,5 @@
-from application.core.settings import settings
 from pymongo import MongoClient
+from application.core.settings import settings
 
 
 class MongoDB:

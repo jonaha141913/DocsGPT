@@ -1,9 +1,8 @@
 """Base schema for data structures."""
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
-
 from dataclasses_json import DataClassJsonMixin
+from typing import Any, Optional
 
 
 @dataclass
@@ -18,10 +17,10 @@ class BaseDocument(DataClassJsonMixin):
     # TODO: consolidate fields from Document/IndexStruct into base class
     text: Optional[str] = None
     doc_id: Optional[str] = None
-    embedding: Optional[List[float]] = None
+    embedding: Optional[list[float]] = None
 
     # extra fields
-    extra_info: Optional[Dict[str, Any]] = None
+    extra_info: Optional[dict[str, Any]] = None
 
     @classmethod
     @abstractmethod

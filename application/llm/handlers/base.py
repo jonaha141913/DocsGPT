@@ -1,7 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, Generator, List, Optional, Union
+from typing import Any, Dict, Generator, Optional, Union
 
 from application.logging import build_stack_data
 
@@ -14,11 +14,11 @@ class ToolCall:
 
     id: str
     name: str
-    arguments: Union[str, Dict]
-    index: Optional[int] = None
+    arguments: str | dict
+    index: int | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "ToolCall":
+    def from_dict(cls, data: dict) -> "ToolCall":
         """Create ToolCall from dictionary."""
         return cls(
             id=data.get("id", ""),
@@ -33,7 +33,7 @@ class LLMResponse:
     """Represents a response from the LLM."""
 
     content: str
-    tool_calls: List[ToolCall]
+    tool_calls: list[ToolCall]
     finish_reason: str
     raw_response: Any
 
@@ -98,8 +98,8 @@ class LLMHandler(ABC):
             )
 
     def prepare_messages(
-        self, agent, messages: List[Dict], attachments: Optional[List] = None
-    ) -> List[Dict]:
+        self, agent, messages: list[dict], attachments: list | None = None
+    ) -> list[dict]:
         """
         Prepare messages with attachments and provider-specific formatting.
 
@@ -144,8 +144,8 @@ class LLMHandler(ABC):
         return messages
 
     def _append_unsupported_attachments(
-        self, messages: List[Dict], attachments: List[Dict]
-    ) -> List[Dict]:
+        self, messages: list[dict], attachments: list[dict]
+    ) -> list[dict]:
         """
         Default method to append unsupported attachment content to system prompt.
 
@@ -179,7 +179,7 @@ class LLMHandler(ABC):
         return prepared_messages
 
     def handle_tool_calls(
-        self, agent, tool_calls: List[ToolCall], tools_dict: Dict, messages: List[Dict]
+        self, agent, tool_calls: list[ToolCall], tools_dict: dict, messages: list[dict]
     ) -> Generator:
         """
         Execute tool calls and update conversation history.

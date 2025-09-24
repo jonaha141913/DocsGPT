@@ -4,7 +4,6 @@ import os
 from application.core.settings import settings
 from application.llm.llm_creator import LLMCreator
 from application.retriever.base import BaseRetriever
-
 from application.vectorstore.vector_creator import VectorCreator
 
 
@@ -115,7 +114,7 @@ class ClassicRAG(BaseRetriever):
             return rephrased_query if rephrased_query else self.original_question
         except Exception as e:
             logging.error(f"Error rephrasing query: {e}", exc_info=True)
-            return self.original_question
+            raise
 
     def _get_data(self):
         """Retrieve relevant documents from configured vectorstores"""
@@ -171,8 +170,7 @@ class ClassicRAG(BaseRetriever):
                         f"Error searching vectorstore {vectorstore_id}: {e}",
                         exc_info=True,
                     )
-                    continue
-        return all_docs
+                    raise
 
     def search(self, query: str = ""):
         """Search for documents using optional query override"""

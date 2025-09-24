@@ -1,7 +1,7 @@
-import io
 import base64
-from gtts import gTTS
+import io
 from application.tts.base import BaseTTS
+from gtts import gTTS
 
 
 class GoogleTTS(BaseTTS):

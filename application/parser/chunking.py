@@ -1,8 +1,9 @@
-import re
-from typing import List, Tuple
 import logging
+import re
+
 from application.parser.schema.base import Document
 from application.utils import get_encoding
+from typing import Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +45,10 @@ class Chunker:
         part_index = 0
         while current_position < len(body_tokens):
             end_position = current_position + self.max_tokens - len(header_tokens)
-            chunk_tokens = (header_tokens + body_tokens[current_position:end_position]
-                            if self.duplicate_headers or part_index == 0 else body_tokens[current_position:end_position])
+            if self.duplicate_headers or part_index == 0:
+                chunk_tokens = header_tokens + body_tokens[current_position:end_position]
+            else:
+                chunk_tokens = body_tokens[current_position:end_position]
             chunk_text = self.encoding.decode(chunk_tokens)
             new_doc = Document(
                 text=chunk_text,

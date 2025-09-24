@@ -1,10 +1,10 @@
-import os
-import re
-import logging
 import aiohttp
 import discord
-from discord.ext import commands
 import dotenv
+import logging
+import os
+import re
+from discord.ext import commands
 
 dotenv.load_dotenv()
 
@@ -97,10 +97,10 @@ async def start(ctx):
 async def custom_help_command(ctx):
     """Handles the /custom_help command."""
     help_text = (
-        "Here are the available commands:\n"
-        "`!start` - Begin a new conversation with the bot\n"
-        "`!help` - Display this help message\n\n"
-        "You can also mention me or send a direct message to ask a question!"
+        f"Here are the available commands:\n"
+        f"`!start` - Begin a new conversation with the bot\n"
+        f"`!help` - Display this help message\n\n"
+        f"You can also mention me or send a direct message to ask a question!"
     )
     await ctx.send(help_text)
 
@@ -146,8 +146,9 @@ async def on_message(message):
     conversation_id = response_doc["conversation_id"]
 
     answer_chunks = chunk_string(answer)
-    for chunk in answer_chunks:
-        await message.channel.send(chunk)
+    async with message.channel.typing():
+        for chunk in answer_chunks:
+            await message.channel.send(chunk)
 
     conversation["history"][-1]["response"] = answer
     conversation["conversation_id"] = conversation_id

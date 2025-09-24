@@ -1,8 +1,7 @@
-import logging
 from abc import ABC, abstractmethod
+import logging
 
 from application.cache import gen_cache, stream_cache
-
 from application.core.settings import settings
 from application.usage import gen_token_usage, stream_token_usage
 
@@ -87,7 +86,6 @@ class BaseLLM(ABC):
             messages=messages,
             stream=stream,
             tools=tools,
-            *args,
             **kwargs,
         )
 
@@ -100,17 +98,16 @@ class BaseLLM(ABC):
             messages=messages,
             stream=stream,
             tools=tools,
-            *args,
             **kwargs,
         )
 
     @abstractmethod
     def _raw_gen(self, model, messages, stream, tools, *args, **kwargs):
-        pass
+        ...
 
     @abstractmethod
     def _raw_gen_stream(self, model, messages, stream, *args, **kwargs):
-        pass
+        ...
 
     def supports_tools(self):
         return hasattr(self, "_supports_tools") and callable(
@@ -131,7 +128,6 @@ class BaseLLM(ABC):
 
     def prepare_structured_output_format(self, json_schema):
         """Prepare structured output format specific to the LLM provider"""
-        _ = json_schema
         return None
 
     def get_supported_attachment_types(self):

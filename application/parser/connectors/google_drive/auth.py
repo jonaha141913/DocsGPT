@@ -262,6 +262,6 @@ class GoogleDriveAuth(BaseConnectorAuth):
         except HttpError as e:
             logging.error(f"HTTP error validating credentials: {e}")
             return False
-        except Exception as e:
-            logging.error(f"Error validating credentials: {e}")
+        except Exception:
+            logging.error("Error validating credentials")
             return False

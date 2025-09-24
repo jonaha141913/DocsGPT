@@ -6,8 +6,7 @@ from urllib.parse import urlparse
 
 headers = {
     "User-Agent": "Mozilla/5.0",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*"
-    ";q=0.8",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.5",
     "Referer": "https://www.google.com/",
     "DNT": "1",
@@ -18,7 +17,7 @@ headers = {
 
 class WebLoader(BaseRemote):
     def __init__(self):
-        self.loader = WebBaseLoader
+        self.loader = WebBaseLoader()
 
     def load_data(self, inputs):
         urls = inputs
@@ -30,7 +29,7 @@ class WebLoader(BaseRemote):
             if not urlparse(url).scheme:
                 url = "http://" + url
             try:
-                loader = self.loader([url], header_template=headers)
+                loader = self.loader([url], headers=headers)
                 loaded_docs = loader.load()
                 for doc in loaded_docs:
                     documents.append(

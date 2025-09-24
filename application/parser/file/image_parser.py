@@ -3,12 +3,13 @@
 Contains parser for .png, .jpg, .jpeg files.
 
 """
-from pathlib import Path
 import requests
-from typing import Dict, Union
+from pathlib import Path
 
-from application.parser.file.base_parser import BaseParser
 from application.core.settings import settings
+from application.parser.file.base_parser import BaseParser
+
+from typing import Union
 
 
 class ImageParser(BaseParser):

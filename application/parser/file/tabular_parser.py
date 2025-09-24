@@ -4,7 +4,7 @@ Contains parsers for tabular data files.
 
 """
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from application.parser.file.base_parser import BaseParser
 
@@ -88,7 +88,7 @@ class PandasCSVParser(BaseParser):
             concat_rows: bool = True,
             col_joiner: str = ", ",
             row_joiner: str = "\n",
-            pandas_config: dict = {},
+            pandas_config: dict | None = None,
             header_period: int = 20,
             header_prefix: str = "HEADERS: ",
             **kwargs: Any
@@ -174,7 +174,7 @@ class ExcelParser(BaseParser):
             concat_rows: bool = True,
             col_joiner: str = ", ",
             row_joiner: str = "\n",
-            pandas_config: dict = {},
+            pandas_config: dict | None = None,
             header_period: int = 20,
             header_prefix: str = "HEADERS: ",
             **kwargs: Any

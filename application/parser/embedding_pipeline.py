@@ -1,7 +1,9 @@
-import os
 import logging
+import os
+
 from retry import retry
 from tqdm import tqdm
+
 from application.core.settings import settings
 from application.vectorstore.vector_creator import VectorCreator
 
@@ -38,7 +40,7 @@ def add_text_to_store_with_retry(store, doc, source_id):
         store.add_texts([doc.page_content], metadatas=[doc.metadata])
     except Exception as e:
         logging.error(f"Failed to add document with retry: {e}", exc_info=True)
-        raise
+        raise e
 
 
 def embed_and_store_documents(docs, folder_name, source_id, task_status):
@@ -96,7 +98,7 @@ def embed_and_store_documents(docs, folder_name, source_id, task_status):
             logging.error(f"Error embedding document {idx}: {e}", exc_info=True)
             logging.info(f"Saving progress at document {idx} out of {total_docs}")
             store.save_local(folder_name)
-            break
+            raise e
 
     # Save the vector store
     if settings.VECTOR_STORE == "faiss":

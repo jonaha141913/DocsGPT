@@ -8,6 +8,12 @@ class AgentCreator:
         "react": ReActAgent,
     }
 
+    def __init__(self):
+        self.agents = {
+            "classic": ClassicAgent,
+            "react": ReActAgent,
+        }
+
     @classmethod
     def create_agent(cls, type, *args, **kwargs):
         agent_class = cls.agents.get(type.lower())

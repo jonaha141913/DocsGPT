@@ -2,9 +2,9 @@
 Contains parsers for presentation (.pptx) files to extract slide text.
 """
 from pathlib import Path
-from typing import Any, Dict, List, Union
 
 from application.parser.file.base_parser import BaseParser
+from typing import Any, Union
 
 class PPTXParser(BaseParser):
     r"""PPTX (.pptx) parser for extracting text from PowerPoint slides.

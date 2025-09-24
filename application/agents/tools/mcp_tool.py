@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import requests
 
@@ -14,6 +14,8 @@ _mcp_session_cache = {}
 class MCPTool(Tool):
     """
     MCP Tool
+    """
+    _mcp_session_cache: Dict[str, Any] = {}
     Connect to remote Model Context Protocol (MCP) servers to access dynamic tools and resources. Supports various authentication methods and provides secure access to external services through the MCP protocol.
     """
 
@@ -121,7 +123,7 @@ class MCPTool(Tool):
             self._make_mcp_request("notifications/initialized")
 
             return response
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             return {"error": str(e), "fallback": True}
 
     def _ensure_valid_session(self):
@@ -210,7 +212,7 @@ class MCPTool(Tool):
             if not is_retry and self._should_retry_with_new_session(e):
                 self._invalidate_and_refresh_session()
                 return self._execute_mcp_request(mcp_message, method, is_retry=True)
-            raise Exception(f"MCP server request failed: {str(e)}")
+            raise requests.exceptions.RequestException(f"MCP server request failed: {str(e)}")
 
     def _should_retry_with_new_session(self, error: Exception) -> bool:
         """Check if error indicates session invalidation and retry is warranted."""
@@ -267,8 +269,8 @@ class MCPTool(Tool):
             else:
                 self.available_tools = []
             return self.available_tools
-        except Exception as e:
-            raise Exception(f"Failed to discover tools from MCP server: {str(e)}")
+        except requests.exceptions.RequestException as e:
+            raise requests.exceptions.RequestException(f"Failed to discover tools from MCP server: {str(e)}")
 
     def execute_action(self, action_name: str, **kwargs) -> Any:
         """
@@ -294,8 +296,8 @@ class MCPTool(Tool):
         try:
             result = self._make_mcp_request("tools/call", call_params)
             return result
-        except Exception as e:
-            raise Exception(f"Failed to execute action '{action_name}': {str(e)}")
+        except requests.exceptions.RequestException as e:
+            raise requests.exceptions.RequestException(f"Failed to execute action '{action_name}': {str(e)}")
 
     def get_actions_metadata(self) -> List[Dict]:
         """
@@ -367,7 +369,7 @@ class MCPTool(Tool):
                 "session_id": self._mcp_session_id,
                 "tools": [tool.get("name", "unknown") for tool in tools[:5]],
             }
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             return {
                 "success": False,
                 "message": f"Connection failed: {str(e)}",

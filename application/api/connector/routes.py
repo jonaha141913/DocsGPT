@@ -15,20 +15,16 @@ from flask import (
 from flask_restx import fields, Namespace, Resource
 
 
+from application.api import api
 from application.api.user.tasks import (
     ingest_connector_task,
 )
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
-from application.api import api
-
-
+from application.parser.connectors.connector_creator import ConnectorCreator
 from application.utils import (
     check_required_fields
 )
-
-
-from application.parser.connectors.connector_creator import ConnectorCreator
 
 
 
@@ -124,7 +120,7 @@ class UploadConnector(Resource):
                 loader=data["source"],
                 sync_frequency=sync_frequency
             )
-        except Exception as err:
+        except (json.JSONDecodeError, KeyError, TypeError) as err:
             current_app.logger.error(
                 f"Error uploading connector source: {err}", exc_info=True
             )

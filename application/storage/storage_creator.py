@@ -1,14 +1,14 @@
 """Storage factory for creating different storage implementations."""
-from typing import Dict, Type
-
+from application.core.settings import settings
 from application.storage.base import BaseStorage
 from application.storage.local import LocalStorage
 from application.storage.s3 import S3Storage
-from application.core.settings import settings
+
+from typing import Type
 
 
 class StorageCreator:
-    storages: Dict[str, Type[BaseStorage]] = {
+    storages: dict[str, Type[BaseStorage]] = {
         "local": LocalStorage,
         "s3": S3Storage,
     }

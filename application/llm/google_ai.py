@@ -92,6 +92,7 @@ class GoogleLLM(BaseLLM):
                                 "text": f"[File could not be processed: {attachment.get('path', 'unknown')}]",
                             }
                         )
+                    continue
 
         if files:
             logging.info(f"GoogleLLM: Adding {len(files)} files to message")
@@ -126,8 +127,6 @@ class GoogleLLM(BaseLLM):
                     file=local_path
                 ).uri,
             )
-
-            from application.core.mongo_db import MongoDB
 
             mongo = MongoDB.get_client()
             db = mongo[settings.MONGO_DB_NAME]
@@ -363,7 +362,8 @@ class GoogleLLM(BaseLLM):
             if has_attachments:
                 break
 
-        logging.info(
+        logger = logging.getLogger(__name__)
+        logger.info(
             f"GoogleLLM: Starting stream generation. Model: {model}, Messages: {json.dumps(messages, default=str)}, Has attachments: {has_attachments}"
         )
 
@@ -457,7 +457,8 @@ class GoogleLLM(BaseLLM):
         try:
             return convert(json_schema)
         except Exception as e:
-            logging.error(
+            logger = logging.getLogger(__name__)
+            logger.error(
                 f"Error preparing structured output format for Google: {e}",
                 exc_info=True,
             )

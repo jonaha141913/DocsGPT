@@ -1,18 +1,16 @@
 import os
 from abc import ABC, abstractmethod
 
+from application.core.settings import settings
 from langchain_openai import OpenAIEmbeddings
 from sentence_transformers import SentenceTransformer
 
-from application.core.settings import settings
-
 
 class EmbeddingsWrapper:
-    def __init__(self, model_name, *args, **kwargs):
+    def __init__(self, model_name, **kwargs):
         self.model = SentenceTransformer(
             model_name,
             config_kwargs={"allow_dangerous_deserialization": True},
-            *args,
             **kwargs
         )
         self.dimension = self.model.get_sentence_embedding_dimension()
@@ -36,15 +34,15 @@ class EmbeddingsSingleton:
     _instances = {}
 
     @staticmethod
-    def get_instance(embeddings_name, *args, **kwargs):
+    def get_instance(embeddings_name, **kwargs):
         if embeddings_name not in EmbeddingsSingleton._instances:
             EmbeddingsSingleton._instances[embeddings_name] = (
-                EmbeddingsSingleton._create_instance(embeddings_name, *args, **kwargs)
+                EmbeddingsSingleton._create_instance(embeddings_name, **kwargs)
             )
         return EmbeddingsSingleton._instances[embeddings_name]
 
     @staticmethod
-    def _create_instance(embeddings_name, *args, **kwargs):
+    def _create_instance(embeddings_name, **kwargs):
         embeddings_factory = {
             "openai_text-embedding-ada-002": OpenAIEmbeddings,
             "huggingface_sentence-transformers/all-mpnet-base-v2": lambda: EmbeddingsWrapper(
@@ -59,44 +57,44 @@ class EmbeddingsSingleton:
         }
 
         if embeddings_name in embeddings_factory:
-            return embeddings_factory[embeddings_name](*args, **kwargs)
+            return embeddings_factory[embeddings_name](**kwargs)
         else:
-            return EmbeddingsWrapper(embeddings_name, *args, **kwargs)
+            return EmbeddingsWrapper(embeddings_name, **kwargs)
 
 
 class BaseVectorStore(ABC):
     def __init__(self):
-        pass
+        ...
 
     @abstractmethod
     def search(self, *args, **kwargs):
         """Search for similar documents/chunks in the vectorstore"""
-        pass
+        ...
 
     @abstractmethod
     def add_texts(self, texts, metadatas=None, *args, **kwargs):
         """Add texts with their embeddings to the vectorstore"""
-        pass
+        ...
 
     def delete_index(self, *args, **kwargs):
         """Delete the entire index/collection"""
-        pass
+        ...
 
     def save_local(self, *args, **kwargs):
         """Save vectorstore to local storage"""
-        pass
+        ...
 
     def get_chunks(self, *args, **kwargs):
         """Get all chunks from the vectorstore"""
-        pass
+        ...
 
     def add_chunk(self, text, metadata=None, *args, **kwargs):
         """Add a single chunk to the vectorstore"""
-        pass
+        ...
 
     def delete_chunk(self, chunk_id, *args, **kwargs):
         """Delete a specific chunk from the vectorstore"""
-        pass
+        ...
 
     def is_azure_configured(self):
         return (

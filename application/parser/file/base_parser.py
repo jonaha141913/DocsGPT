@@ -2,7 +2,6 @@
 
 from abc import abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Union
 
 
 class BaseParser:
@@ -23,8 +22,9 @@ class BaseParser:
         return self._parser_config is not None
 
     @property
-    def parser_config(self) -> Dict:
-        """Check if parser config is set."""
+    @property
+    def parser_config(self) -> dict:
+        """Get the parser configuration."""
         if self._parser_config is None:
             raise ValueError("Parser config not set.")
         return self._parser_config
@@ -34,5 +34,5 @@ class BaseParser:
         """Initialize the parser with the config."""
 
     @abstractmethod
-    def parse_file(self, file: Path, errors: str = "ignore") -> Union[str, List[str]]:
+    def parse_file(self, file: Path, errors: str = "ignore") -> str | list[str]:
         """Parse file."""

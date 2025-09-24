@@ -2,12 +2,11 @@ import base64
 import json
 import os
 
+from application.core.settings import settings
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers import algorithms, Cipher, modes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
-from application.core.settings import settings
 
 
 def _derive_key(user_id: str, salt: bytes) -> bytes:
@@ -46,7 +45,7 @@ def encrypt_credentials(credentials: dict, user_id: str) -> str:
         return base64.b64encode(result).decode()
     except Exception as e:
         print(f"Warning: Failed to encrypt credentials: {e}")
-        return ""
+        raise
 
 
 def decrypt_credentials(encrypted_data: str, user_id: str) -> dict:
@@ -70,7 +69,7 @@ def decrypt_credentials(encrypted_data: str, user_id: str) -> dict:
         return json.loads(decrypted_data.decode())
     except Exception as e:
         print(f"Warning: Failed to decrypt credentials: {e}")
-        return {}
+        raise
 
 
 def _pad_data(data: bytes) -> bytes:

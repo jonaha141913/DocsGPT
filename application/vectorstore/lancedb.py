@@ -1,14 +1,15 @@
-from typing import List, Optional
 import importlib
-from application.vectorstore.base import BaseVectorStore
+from typing import Optional
+
 from application.core.settings import settings
+from application.vectorstore.base import BaseVectorStore
 
 class LanceDBVectorStore(BaseVectorStore):
     """Class for LanceDB Vector Store integration."""
 
     def __init__(self, path: str = settings.LANCEDB_PATH,
                  table_name_prefix: str = settings.LANCEDB_TABLE_NAME,
-                 source_id: str = None,
+                 source_id: Optional[str] = None,
                  embeddings_key: str = "embeddings"):
         """Initialize the LanceDB vector store."""
         super().__init__()

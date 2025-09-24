@@ -1,6 +1,6 @@
-import unittest
-from unittest.mock import patch, Mock
 from application.llm.anthropic import AnthropicLLM
+import unittest
+from unittest.mock import Mock, patch
 
 class TestAnthropicLLM(unittest.TestCase):
 
