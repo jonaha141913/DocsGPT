@@ -2,7 +2,7 @@ import logging
 import traceback
 
 from flask import make_response, request
-from flask_restx import fields, Resource
+from flask_restx import fields, Resource, Api
 
 from application.api import api
 
@@ -12,6 +12,13 @@ from application.api.answer.services.stream_processor import StreamProcessor
 
 logger = logging.getLogger(__name__)
 
+# Define the Blueprint/Api instance that the test expects to register
+register = Api(
+    answer_ns,
+    version="1.0",
+    title="Answer API",
+    description="API for generating answers",
+)
 
 @answer_ns.route("/api/answer")
 class AnswerResource(Resource, BaseAnswerResource):
