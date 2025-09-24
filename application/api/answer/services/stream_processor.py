@@ -270,7 +270,7 @@ class StreamProcessor:
                     self.retriever_config["chunks"] = int(data_key["chunks"])
                 except (ValueError, TypeError):
                     logger.warning(
-                        f"Invalid chunks value: {data_key['chunks']}, using default value 2"
+                        f"Invalid chunks value: {data_key['chunks']!s}, using default value 2"
                     )
                     self.retriever_config["chunks"] = 2
         elif self.agent_key:
@@ -297,7 +297,7 @@ class StreamProcessor:
                     self.retriever_config["chunks"] = int(data_key["chunks"])
                 except (ValueError, TypeError):
                     logger.warning(
-                        f"Invalid chunks value: {data_key['chunks']}, using default value 2"
+                        f"Invalid chunks value: {data_key['chunks']!s}, using default value 2"
                     )
                     self.retriever_config["chunks"] = 2
         else:

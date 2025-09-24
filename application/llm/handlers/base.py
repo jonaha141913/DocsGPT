@@ -1,7 +1,8 @@
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Any, Dict, Generator, List, Optional, Union
+from typing import Any, Optional, Union
 
 from application.logging import build_stack_data
 
@@ -160,7 +161,7 @@ class LLMHandler(ABC):
         attachment_texts = []
 
         for attachment in attachments:
-            logger.info(f"Adding attachment {attachment.get('id')} to context")
+            logger.info(f"Adding attachment {attachment.get('id', '')} to context")
             if "content" in attachment:
                 attachment_texts.append(
                     f"Attached file content:\n\n{attachment['content']}"
@@ -179,7 +180,7 @@ class LLMHandler(ABC):
         return prepared_messages
 
     def handle_tool_calls(
-        self, agent, tool_calls: List[ToolCall], tools_dict: Dict, messages: List[Dict]
+        self, agent, tool_calls: list[ToolCall], tools_dict: dict, messages: list[dict]
     ) -> Generator:
         """
         Execute tool calls and update conversation history.
@@ -222,7 +223,7 @@ class LLMHandler(ABC):
 
                 updated_messages.append(self.create_tool_message(call, tool_response))
             except Exception as e:
-                logger.error(f"Error executing tool: {str(e)}", exc_info=True)
+                logger.exception(f"Error executing tool: {str(e)}")
                 error_call = ToolCall(
                     id=call.id, name=call.name, arguments=call.arguments
                 )
@@ -254,7 +255,7 @@ class LLMHandler(ABC):
         return updated_messages
 
     def handle_non_streaming(
-        self, agent, response: Any, tools_dict: Dict, messages: List[Dict]
+        self, agent, response: Any, tools_dict: dict, messages: list[dict]
     ) -> Generator:
         """
         Handle non-streaming response flow.
@@ -289,7 +290,7 @@ class LLMHandler(ABC):
         return parsed.content
 
     def handle_streaming(
-        self, agent, response: Any, tools_dict: Dict, messages: List[Dict]
+        self, agent, response: Any, tools_dict: dict, messages: list[dict]
     ) -> Generator:
         """
         Handle streaming response flow.

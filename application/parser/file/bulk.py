@@ -1,21 +1,22 @@
 """Simple reader that reads files of different formats from a directory."""
 import logging
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
 
 from application.parser.file.base import BaseReader
 from application.parser.file.base_parser import BaseParser
 from application.parser.file.docs_parser import DocxParser, PDFParser
 from application.parser.file.epub_parser import EpubParser
 from application.parser.file.html_parser import HTMLParser
-from application.parser.file.markdown_parser import MarkdownParser
-from application.parser.file.rst_parser import RstParser
-from application.parser.file.tabular_parser import PandasCSVParser,ExcelParser
-from application.parser.file.json_parser import JSONParser
-from application.parser.file.pptx_parser import PPTXParser
 from application.parser.file.image_parser import ImageParser
+from application.parser.file.json_parser import JSONParser
+from application.parser.file.markdown_parser import MarkdownParser
+from application.parser.file.pptx_parser import PPTXParser
+from application.parser.file.rst_parser import RstParser
+from application.parser.file.tabular_parser import ExcelParser, PandasCSVParser
 from application.parser.schema.base import Document
 from application.utils import num_tokens_from_string
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_FILE_EXTRACTOR: Dict[str, BaseParser] = {
     ".pdf": PDFParser(),
@@ -99,11 +100,11 @@ class SimpleDirectoryReader(BaseReader):
         self.file_extractor = file_extractor or DEFAULT_FILE_EXTRACTOR
         self.file_metadata = file_metadata
 
-    def _add_files(self, input_dir: Path) -> List[Path]:
+    def _add_files(self, input_dir: Path) -> list[Path]:
         """Add files."""
         input_files = sorted(input_dir.iterdir())
-        new_input_files = []
-        dirs_to_explore = []
+        new_input_files: list[Path] = []
+        dirs_to_explore: list[Path] = []
         for input_file in input_files:
             if input_file.is_dir():
                 if self.recursive:
@@ -126,13 +127,13 @@ class SimpleDirectoryReader(BaseReader):
             new_input_files = new_input_files[0: self.num_files_limit]
 
         # print total number of files added
-        logging.debug(
+        logger.debug(
             f"> [SimpleDirectoryReader] Total files added: {len(new_input_files)}"
         )
 
         return new_input_files
 
-    def load_data(self, concatenate: bool = False) -> List[Document]:
+    def load_data(self, concatenate: bool = False) -> list[Document]:
         """Load data from the input directory.
 
         Args:
@@ -143,9 +144,9 @@ class SimpleDirectoryReader(BaseReader):
         Returns:
             List[Document]: A list of documents.
         """
-        data: Union[str, List[str]] = ""
-        data_list: List[str] = []
-        metadata_list = []
+        data: str | list[str] = ""
+        data_list: list[str] = []
+        metadata_list: list[dict] = []
         self.file_token_counts = {}
         
         for input_file in self.input_files:
@@ -160,7 +161,7 @@ class SimpleDirectoryReader(BaseReader):
                     data = f.read()
             
             # Calculate token count for this file
-            if isinstance(data, List):
+            if isinstance(data, list):
                 file_tokens = sum(num_tokens_from_string(str(d)) for d in data)
             else:
                 file_tokens = num_tokens_from_string(str(data))
@@ -186,7 +187,7 @@ class SimpleDirectoryReader(BaseReader):
                 custom_metadata = self.file_metadata(input_file.name)
                 base_metadata.update(custom_metadata)
 
-            if isinstance(data, List):
+            if isinstance(data, list):
                 # Extend data_list with each item in the data list
                 data_list.extend([str(d) for d in data])
                 metadata_list.extend([base_metadata for _ in data])
@@ -197,7 +198,7 @@ class SimpleDirectoryReader(BaseReader):
         # Build directory structure if input_dir is provided
         if hasattr(self, 'input_dir'):
             self.directory_structure = self.build_directory_structure(self.input_dir)
-            logging.info("Directory structure built successfully")
+            logger.info("Directory structure built successfully")
         else:
             self.directory_structure = {}
 

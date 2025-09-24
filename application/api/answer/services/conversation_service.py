@@ -1,11 +1,10 @@
 import logging
+from bson import ObjectId
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from application.core.mongo_db import MongoDB
-
 from application.core.settings import settings
-from bson import ObjectId
 
 
 logger = logging.getLogger(__name__)
@@ -39,8 +38,8 @@ class ConversationService:
                 return None
             conversation["_id"] = str(conversation["_id"])
             return conversation
-        except Exception as e:
-            logger.error(f"Error fetching conversation: {str(e)}", exc_info=True)
+        except Exception:
+            logger.exception("Error fetching conversation")
             return None
 
     def save_conversation(
@@ -153,7 +152,7 @@ class ConversationService:
             conversation_data = {
                 "user": user_id,
                 "date": current_time,
-                "name": completion,
+                "name": str(completion),
                 "queries": [
                     {
                         "prompt": question,

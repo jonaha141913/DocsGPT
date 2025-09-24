@@ -4,7 +4,6 @@ import os
 from application.core.settings import settings
 from application.llm.llm_creator import LLMCreator
 from application.retriever.base import BaseRetriever
-
 from application.vectorstore.vector_creator import VectorCreator
 
 
@@ -71,13 +70,13 @@ class ClassicRAG(BaseRetriever):
     def _validate_vectorstore_config(self):
         """Validate vectorstore IDs and remove any empty/invalid entries"""
         if not self.vectorstores:
-            logging.warning("No vectorstores configured for retrieval")
+            logger.warning("No vectorstores configured for retrieval")
             return
         invalid_ids = [
             vs_id for vs_id in self.vectorstores if not vs_id or not vs_id.strip()
         ]
         if invalid_ids:
-            logging.warning(f"Found invalid vectorstore IDs: {invalid_ids}")
+            logger.warning(f"Found invalid vectorstore IDs: {invalid_ids}")
             self.vectorstores = [
                 vs_id for vs_id in self.vectorstores if vs_id and vs_id.strip()
             ]
@@ -114,7 +113,7 @@ class ClassicRAG(BaseRetriever):
             print(f"Rephrased query: {rephrased_query}")
             return rephrased_query if rephrased_query else self.original_question
         except Exception as e:
-            logging.error(f"Error rephrasing query: {e}", exc_info=True)
+            logger.exception(f"Error rephrasing query: {e}")
             return self.original_question
 
     def _get_data(self):
@@ -167,9 +166,8 @@ class ClassicRAG(BaseRetriever):
                             }
                         )
                 except Exception as e:
-                    logging.error(
-                        f"Error searching vectorstore {vectorstore_id}: {e}",
-                        exc_info=True,
+                    logger.exception(
+                        f"Error searching vectorstore {vectorstore_id}: {e}"
                     )
                     continue
         return all_docs

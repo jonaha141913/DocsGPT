@@ -1,17 +1,18 @@
 import datetime
 import functools
 import inspect
-
 import logging
 import uuid
-from typing import Any, Callable, Dict, Generator, List
+from collections.abc import Callable, Generator
+from typing import Any, Dict, List
 
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
+logger.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
 
 
 class LogContext:
@@ -26,9 +27,9 @@ class LogContext:
 
 def build_stack_data(
     obj: Any,
-    include_attributes: List[str] = None,
-    exclude_attributes: List[str] = None,
-    custom_data: Dict = None,
+    include_attributes: List[str] | None = None,
+    exclude_attributes: List[str] | None = None,
+    custom_data: Dict | None = None,
 ) -> Dict:
     if obj is None:
         raise ValueError("The 'obj' parameter cannot be None")
@@ -60,9 +61,7 @@ def build_stack_data(
                 elif isinstance(attr_value, dict):
                     data[attr_name] = {k: str(v) for k, v in attr_value.items()}
         except AttributeError as e:
-            logging.warning(f"AttributeError while accessing {attr_name}: {e}")
-        except AttributeError:
-            pass
+            logger.warning(f"AttributeError while accessing {attr_name}: {e}")
     if custom_data:
         data.update(custom_data)
     return data
@@ -99,7 +98,7 @@ def _consume_and_log(generator: Generator, context: "LogContext"):
         for item in generator:
             yield item
     except Exception as e:
-        logging.exception(f"Error in {context.endpoint} - {context.activity_id}: {e}")
+        logger.exception(f"Error in {context.endpoint} - {context.activity_id}: {e}")
         context.stacks.append({"component": "error", "data": {"message": str(e)}})
         _log_to_mongodb(
             endpoint=context.endpoint,
@@ -158,4 +157,4 @@ def _log_to_mongodb(
         logging.debug(f"Logged activity to MongoDB: {activity_id}")
 
     except Exception as e:
-        logging.error(f"Failed to log to MongoDB: {e}", exc_info=True)
+        logger.exception(f"Failed to log to MongoDB: {e}")

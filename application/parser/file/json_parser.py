@@ -1,6 +1,6 @@
 import json
-from typing import Any, Dict, List, Union
 from pathlib import Path
+from typing import Any, List, Union
 
 from application.parser.file.base_parser import BaseParser
 
@@ -29,12 +29,16 @@ class JSONParser(BaseParser):
             *args: Any,
             concat_rows: bool = True,
             row_joiner: str = "\n",
-            json_config: dict = {},
+            json_config: dict = None,
             **kwargs: Any
     ) -> None:
         """Init params."""
         super().__init__(*args, **kwargs)
         self._concat_rows = concat_rows
+        if json_config is None:
+            self._json_config = {}
+        else:
+            self._json_config = json_config
         self._row_joiner = row_joiner
         self._json_config = json_config
 

@@ -7,7 +7,6 @@ import tempfile
 import uuid
 import zipfile
 from functools import wraps
-from typing import Optional, Tuple
 
 from bson.binary import Binary, UuidRepresentation
 from bson.dbref import DBRef
@@ -26,15 +25,14 @@ from pymongo import ReturnDocument
 from werkzeug.utils import secure_filename
 
 from application.agents.tools.mcp_tool import MCPTool
-
 from application.agents.tools.tool_manager import ToolManager
 from application.api import api
-
 from application.api.user.tasks import (
     ingest,
     ingest_connector_task,
     ingest_remote,
     process_agent_webhook,
+    reingest_source_task,
     store_attachment,
 )
 from application.core.mongo_db import MongoDB
@@ -179,7 +177,7 @@ def handle_image_upload(
                 storage.save_file(file, upload_path, storage_class="STANDARD")
                 image_url = upload_path
             except Exception as e:
-                current_app.logger.error(f"Error uploading image: {e}")
+                current_app.logger.exception(f"Error uploading image: {e}")
                 return None, make_response(
                     jsonify({"success": False, "message": "Image upload failed"}),
                     400,
@@ -207,9 +205,7 @@ class DeleteConversation(Resource):
                 {"_id": ObjectId(conversation_id), "user": decoded_token["sub"]}
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error deleting conversation: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error deleting conversation: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -227,9 +223,7 @@ class DeleteAllConversations(Resource):
         try:
             conversations_collection.delete_many({"user": user_id})
         except Exception as err:
-            current_app.logger.error(
-                f"Error deleting all conversations: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error deleting all conversations: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -524,9 +518,7 @@ class DeleteOldIndexes(Resource):
         except FileNotFoundError:
             pass
         except Exception as err:
-            current_app.logger.error(
-                f"Error deleting files and indexes: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error deleting files and indexes: {err}")
             return make_response(jsonify({"success": False}), 400)
 
         sources_collection.delete_one({"_id": ObjectId(source_id)})
@@ -651,7 +643,7 @@ class UploadFile(Resource):
                 filename=dir_name,
             )
         except Exception as err:
-            current_app.logger.error(f"Error uploading file: {err}", exc_info=True)
+            current_app.logger.exception(f"Error uploading file: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True, "task_id": task.id}), 200)
 
@@ -788,8 +780,6 @@ class ManageSourceFiles(Resource):
                         added_files.append(safe_filename_str)
                 # Trigger re-ingestion pipeline
 
-                from application.api.user.tasks import reingest_source_task
-
                 task = reingest_source_task.delay(source_id=source_id, user=user)
 
                 return make_response(
@@ -842,8 +832,6 @@ class ManageSourceFiles(Resource):
                         storage.delete_file(full_path)
                         removed_files.append(file_path)
                 # Trigger re-ingestion pipeline
-
-                from application.api.user.tasks import reingest_source_task
 
                 task = reingest_source_task.delay(source_id=source_id, user=user)
 
@@ -928,8 +916,6 @@ class ManageSourceFiles(Resource):
 
                 # Trigger re-ingestion pipeline
 
-                from application.api.user.tasks import reingest_source_task
-
                 task = reingest_source_task.delay(source_id=source_id, user=user)
 
                 return make_response(
@@ -956,9 +942,7 @@ class ManageSourceFiles(Resource):
                 parent_dir = request.form.get("parent_dir", "")
                 error_context += f", parent_dir={parent_dir}"
 
-            current_app.logger.error(
-                f"Error managing source files: {err} ({error_context})", exc_info=True
-            )
+            current_app.logger.exception(f"Error managing source files: {err} ({error_context})")
             return make_response(
                 jsonify({"success": False, "message": "Operation failed"}), 500
             )
@@ -1053,9 +1037,7 @@ class UploadRemote(Resource):
                 loader=data["source"],
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error uploading remote source: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error uploading remote source: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True, "task_id": task.id}), 200)
 
@@ -1086,7 +1068,7 @@ class TaskStatus(Resource):
             ):
                 task_meta = str(task_meta)  # Convert to a string representation
         except Exception as err:
-            current_app.logger.error(f"Error getting task status: {err}", exc_info=True)
+            current_app.logger.exception(f"Error getting task status: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"status": task.status, "result": task_meta}), 200)
 
@@ -1165,9 +1147,7 @@ class PaginatedSources(Resource):
             }
             return make_response(jsonify(response), 200)
         except Exception as err:
-            current_app.logger.error(
-                f"Error retrieving paginated sources: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error retrieving paginated sources: {err}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -1209,7 +1189,7 @@ class CombinedJson(Resource):
                     }
                 )
         except Exception as err:
-            current_app.logger.error(f"Error retrieving sources: {err}", exc_info=True)
+            current_app.logger.exception(f"Error retrieving sources: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(data), 200)
 
@@ -1234,7 +1214,7 @@ class CheckDocs(Resource):
             if os.path.exists(vectorstore) or data["docs"] == "default":
                 return {"status": "exists"}, 200
         except Exception as err:
-            current_app.logger.error(f"Error checking document: {err}", exc_info=True)
+            current_app.logger.exception(f"Error checking document: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"status": "not found"}), 404)
 
@@ -1274,7 +1254,7 @@ class CreatePrompt(Resource):
             )
             new_id = str(resp.inserted_id)
         except Exception as err:
-            current_app.logger.error(f"Error creating prompt: {err}", exc_info=True)
+            current_app.logger.exception(f"Error creating prompt: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": new_id}), 200)
 
@@ -1304,7 +1284,7 @@ class GetPrompts(Resource):
                     }
                 )
         except Exception as err:
-            current_app.logger.error(f"Error retrieving prompts: {err}", exc_info=True)
+            current_app.logger.exception(f"Error retrieving prompts: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(list_prompts), 200)
 
@@ -1347,7 +1327,7 @@ class GetSinglePrompt(Resource):
                 {"_id": ObjectId(prompt_id), "user": user}
             )
         except Exception as err:
-            current_app.logger.error(f"Error retrieving prompt: {err}", exc_info=True)
+            current_app.logger.exception(f"Error retrieving prompt: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"content": prompt["content"]}), 200)
 
@@ -1374,7 +1354,7 @@ class DeletePrompt(Resource):
         try:
             prompts_collection.delete_one({"_id": ObjectId(data["id"]), "user": user})
         except Exception as err:
-            current_app.logger.error(f"Error deleting prompt: {err}", exc_info=True)
+            current_app.logger.exception(f"Error deleting prompt: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -1410,7 +1390,7 @@ class UpdatePrompt(Resource):
                 {"$set": {"name": data["name"], "content": data["content"]}},
             )
         except Exception as err:
-            current_app.logger.error(f"Error updating prompt: {err}", exc_info=True)
+            current_app.logger.exception(f"Error updating prompt: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -1475,7 +1455,7 @@ class GetAgent(Resource):
             }
             return make_response(jsonify(data), 200)
         except Exception as e:
-            current_app.logger.error(f"Agent fetch error: {e}", exc_info=True)
+            current_app.logger.exception(f"Agent fetch error: {e}")
             return {"success": False}, 400
 
 
@@ -1546,7 +1526,7 @@ class GetAgents(Resource):
                 if "source" in agent or "retriever" in agent
             ]
         except Exception as err:
-            current_app.logger.error(f"Error retrieving agents: {err}", exc_info=True)
+            current_app.logger.exception(f"Error retrieving agents: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(list_agents), 200)
 
@@ -1747,7 +1727,7 @@ class CreateAgent(Resource):
             resp = agents_collection.insert_one(new_agent)
             new_id = str(resp.inserted_id)
         except Exception as err:
-            current_app.logger.error(f"Error creating agent: {err}", exc_info=True)
+            current_app.logger.exception(f"Error creating agent: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": new_id, "key": key}), 201)
 
@@ -1823,10 +1803,8 @@ class UpdateAgent(Resource):
         try:
             existing_agent = agents_collection.find_one({"_id": oid, "user": user})
         except Exception as err:
+            current_app.logger.exception(f"Error finding agent {agent_id}: {err}")
             return make_response(
-                current_app.logger.error(
-                    f"Error finding agent {agent_id}: {err}", exc_info=True
-                ),
                 jsonify({"success": False, "message": "Database error finding agent"}),
                 500,
             )
@@ -2012,9 +1990,7 @@ class UpdateAgent(Resource):
                     304,
                 )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating agent {agent_id}: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating agent {agent_id}: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Database error during update"}),
                 500,
@@ -2055,7 +2031,7 @@ class DeleteAgent(Resource):
                 )
             deleted_id = str(deleted_agent["_id"])
         except Exception as err:
-            current_app.logger.error(f"Error deleting agent: {err}", exc_info=True)
+            current_app.logger.exception(f"Error deleting agent: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": deleted_id}), 200)
 
@@ -2130,7 +2106,7 @@ class PinnedAgents(Resource):
                 if "source" in agent or "retriever" in agent
             ]
         except Exception as err:
-            current_app.logger.error(f"Error retrieving pinned agents: {err}")
+            current_app.logger.exception(f"Error retrieving pinned agents: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(list_pinned_agents), 200)
 
@@ -2171,7 +2147,7 @@ class PinAgent(Resource):
                 )
                 action = "pinned"
         except Exception as err:
-            current_app.logger.error(f"Error pinning/unpinning agent: {err}")
+            current_app.logger.exception(f"Error pinning/unpinning agent: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Server error"}), 500
             )
@@ -2217,7 +2193,7 @@ class RemoveSharedAgent(Resource):
 
             return make_response(jsonify({"success": True, "action": "removed"}), 200)
         except Exception as err:
-            current_app.logger.error(f"Error removing shared agent: {err}")
+            current_app.logger.exception(f"Error removing shared agent: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Server error"}), 500
             )
@@ -2301,7 +2277,7 @@ class SharedAgent(Resource):
                     )
             return make_response(jsonify(data), 200)
         except Exception as err:
-            current_app.logger.error(f"Error retrieving shared agent: {err}")
+            current_app.logger.exception(f"Error retrieving shared agent: {err}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -2360,7 +2336,7 @@ class SharedAgents(Resource):
 
             return make_response(jsonify(list_shared_agents), 200)
         except Exception as err:
-            current_app.logger.error(f"Error retrieving shared agents: {err}")
+            current_app.logger.exception(f"Error retrieving shared agents: {err}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -2445,7 +2421,7 @@ class ShareAgent(Resource):
                     {"$unset": {"shared_metadata": ""}},
                 )
         except Exception as err:
-            current_app.logger.error(f"Error sharing/unsharing agent: {err}")
+            current_app.logger.exception(f"Error sharing/unsharing agent: {err}")
             return make_response(jsonify({"success": False, "error": str(err)}), 400)
         shared_token = shared_token if shared else None
         return make_response(
@@ -2487,9 +2463,7 @@ class AgentWebhook(Resource):
             base_url = settings.API_URL.rstrip("/")
             full_webhook_url = f"{base_url}/api/webhooks/agents/{webhook_token}"
         except Exception as err:
-            current_app.logger.error(
-                f"Error generating webhook URL: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error generating webhook URL: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Error generating webhook URL"}),
                 400,
@@ -2547,9 +2521,8 @@ class AgentWebhookListener(Resource):
             )
             return make_response(jsonify({"success": True, "task_id": task.id}), 200)
         except Exception as err:
-            current_app.logger.error(
-                f"Error enqueuing webhook task ({source_method}) for agent {agent_id_str}: {err}",
-                exc_info=True,
+            current_app.logger.exception(
+                f"Error enqueuing webhook task ({source_method}) for agent {agent_id_str}: {err}"
             )
             return make_response(
                 jsonify({"success": False, "message": "Error processing webhook"}), 500
@@ -2770,9 +2743,7 @@ class ShareConversation(Resource):
                     201,
                 )
         except Exception as err:
-            current_app.logger.error(
-                f"Error sharing conversation: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error sharing conversation: {err}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -2826,9 +2797,8 @@ class GetPubliclySharedConversations(Resource):
                                         }
                                     )
                             except Exception as e:
-                                current_app.logger.error(
-                                    f"Error retrieving attachment {attachment_id}: {e}",
-                                    exc_info=True,
+                                current_app.logger.exception(
+                                    f"Error retrieving attachment {attachment_id}: {e}"
                                 )
                         query["attachments"] = attachment_details
             else:
@@ -2852,9 +2822,7 @@ class GetPubliclySharedConversations(Resource):
                 res["api_key"] = shared["api_key"]
             return make_response(jsonify(res), 200)
         except Exception as err:
-            current_app.logger.error(
-                f"Error getting shared conversation: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error getting shared conversation: {err}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -2899,7 +2867,7 @@ class GetMessageAnalytics(Resource):
                 else None
             )
         except Exception as err:
-            current_app.logger.error(f"Error getting API key: {err}", exc_info=True)
+            current_app.logger.exception(f"Error getting API key: {err}")
             return make_response(jsonify({"success": False}), 400)
         end_date = datetime.datetime.now(datetime.timezone.utc)
 
@@ -2969,9 +2937,7 @@ class GetMessageAnalytics(Resource):
             for entry in message_data:
                 daily_messages[entry["_id"]] = entry["count"]
         except Exception as err:
-            current_app.logger.error(
-                f"Error getting message analytics: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error getting message analytics: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(
             jsonify({"success": True, "messages": daily_messages}), 200
@@ -3019,7 +2985,7 @@ class GetTokenAnalytics(Resource):
                 else None
             )
         except Exception as err:
-            current_app.logger.error(f"Error getting API key: {err}", exc_info=True)
+            current_app.logger.exception(f"Error getting API key: {err}")
             return make_response(jsonify({"success": False}), 400)
         end_date = datetime.datetime.now(datetime.timezone.utc)
 
@@ -3124,9 +3090,7 @@ class GetTokenAnalytics(Resource):
                 else:
                     daily_token_usage[entry["_id"]["day"]] = entry["total_tokens"]
         except Exception as err:
-            current_app.logger.error(
-                f"Error getting token analytics: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error getting token analytics: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(
             jsonify({"success": True, "token_usage": daily_token_usage}), 200
@@ -3285,9 +3249,7 @@ class GetFeedbackAnalytics(Resource):
                     "negative": entry["negative"],
                 }
         except Exception as err:
-            current_app.logger.error(
-                f"Error getting feedback analytics: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error getting feedback analytics: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(
             jsonify({"success": True, "feedback": daily_feedback}), 200
@@ -3418,9 +3380,7 @@ class ManageSync(Resource):
                 update_data,
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating sync frequency: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating sync frequency: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -3455,7 +3415,7 @@ class TextToSpeech(Resource):
                 200,
             )
         except Exception as err:
-            current_app.logger.error(f"Error synthesizing audio: {err}", exc_info=True)
+            current_app.logger.exception(f"Error synthesizing audio: {err}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -3480,9 +3440,7 @@ class AvailableTools(Resource):
                     }
                 )
         except Exception as err:
-            current_app.logger.error(
-                f"Error getting available tools: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error getting available tools: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True, "data": tools_metadata}), 200)
 
@@ -3503,7 +3461,7 @@ class GetTools(Resource):
                 tool.pop("_id")
                 user_tools.append(tool)
         except Exception as err:
-            current_app.logger.error(f"Error getting user tools: {err}", exc_info=True)
+            current_app.logger.exception(f"Error getting user tools: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True, "tools": user_tools}), 200)
 
@@ -3581,7 +3539,7 @@ class CreateTool(Resource):
             resp = user_tools_collection.insert_one(new_tool)
             new_id = str(resp.inserted_id)
         except Exception as err:
-            current_app.logger.error(f"Error creating tool: {err}", exc_info=True)
+            current_app.logger.exception(f"Error creating tool: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": new_id}), 200)
 
@@ -3703,7 +3661,7 @@ class UpdateTool(Resource):
                 {"$set": update_data},
             )
         except Exception as err:
-            current_app.logger.error(f"Error updating tool: {err}", exc_info=True)
+            current_app.logger.exception(f"Error updating tool: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -3738,9 +3696,7 @@ class UpdateToolConfig(Resource):
                 {"$set": {"config": data["config"]}},
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating tool config: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating tool config: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -3777,9 +3733,7 @@ class UpdateToolActions(Resource):
                 {"$set": {"actions": data["actions"]}},
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating tool actions: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating tool actions: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -3814,9 +3768,7 @@ class UpdateToolStatus(Resource):
                 {"$set": {"status": data["status"]}},
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating tool status: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating tool status: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -3847,7 +3799,7 @@ class DeleteTool(Resource):
             if result.deleted_count == 0:
                 return {"success": False, "message": "Tool not found"}, 404
         except Exception as err:
-            current_app.logger.error(f"Error deleting tool: {err}", exc_info=True)
+            current_app.logger.exception(f"Error deleting tool: {err}")
             return {"success": False}, 400
         return {"success": True}, 200
 
@@ -3929,7 +3881,7 @@ class GetChunks(Resource):
                 200,
             )
         except Exception as e:
-            current_app.logger.error(f"Error getting chunks: {e}", exc_info=True)
+            current_app.logger.exception(f"Error getting chunks: {e}")
             return make_response(jsonify({"success": False}), 500)
 
 
@@ -3982,7 +3934,7 @@ class AddChunk(Resource):
                 201,
             )
         except Exception as e:
-            current_app.logger.error(f"Error adding chunk: {e}", exc_info=True)
+            current_app.logger.exception(f"Error adding chunk: {e}")
             return make_response(jsonify({"success": False}), 500)
 
 
@@ -4020,7 +3972,7 @@ class DeleteChunk(Resource):
                     404,
                 )
         except Exception as e:
-            current_app.logger.error(f"Error deleting chunk: {e}", exc_info=True)
+            current_app.logger.exception(f"Error deleting chunk: {e}")
             return make_response(jsonify({"success": False}), 500)
 
 
@@ -4115,7 +4067,7 @@ class UpdateChunk(Resource):
                     jsonify({"error": "Failed to update chunk - addition failed"}), 500
                 )
         except Exception as e:
-            current_app.logger.error(f"Error updating chunk: {e}", exc_info=True)
+            current_app.logger.exception(f"Error updating chunk: {e}")
             return make_response(jsonify({"success": False}), 500)
 
 
@@ -4186,7 +4138,7 @@ class StoreAttachment(Resource):
                 200,
             )
         except Exception as err:
-            current_app.logger.error(f"Error storing attachment: {err}", exc_info=True)
+            current_app.logger.exception(f"Error storing attachment: {err}")
             return make_response(jsonify({"success": False, "error": str(err)}), 400)
 
 
@@ -4210,7 +4162,7 @@ class ServeImage(Resource):
                 jsonify({"success": False, "message": "Image not found"}), 404
             )
         except Exception as e:
-            current_app.logger.error(f"Error serving image: {e}")
+            current_app.logger.exception(f"Error serving image: {e}")
             return make_response(
                 jsonify({"success": False, "message": "Error retrieving image"}), 500
             )
@@ -4268,9 +4220,7 @@ class DirectoryStructure(Resource):
                 200,
             )
         except Exception as e:
-            current_app.logger.error(
-                f"Error retrieving directory structure: {e}", exc_info=True
-            )
+            current_app.logger.exception(f"Error retrieving directory structure: {e}")
             return make_response(jsonify({"success": False, "error": str(e)}), 500)
 
 
@@ -4324,7 +4274,7 @@ class TestMCPServerConfig(Resource):
 
             return make_response(jsonify(result), 200)
         except Exception as e:
-            current_app.logger.error(f"Error testing MCP server: {e}", exc_info=True)
+            current_app.logger.exception(f"Error testing MCP server: {e}")
             return make_response(
                 jsonify(
                     {"success": False, "error": f"Connection test failed: {str(e)}"}
@@ -4466,7 +4416,7 @@ class MCPServerSave(Resource):
                 }
             return make_response(jsonify(response_data), 200)
         except Exception as e:
-            current_app.logger.error(f"Error saving MCP server: {e}", exc_info=True)
+            current_app.logger.exception(f"Error saving MCP server: {e}")
             return make_response(
                 jsonify(
                     {"success": False, "error": f"Failed to save MCP server: {str(e)}"}
