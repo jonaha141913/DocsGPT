@@ -13,6 +13,10 @@ from application.api.answer.services.stream_processor import StreamProcessor
 logger = logging.getLogger(__name__)
 
 
+def register(api):
+    api.add_namespace(answer_ns, path='/api/answer')
+
+
 @answer_ns.route("/api/answer")
 class AnswerResource(Resource, BaseAnswerResource):
     def __init__(self, *args, **kwargs):
