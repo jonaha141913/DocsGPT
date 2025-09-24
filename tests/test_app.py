@@ -16,6 +16,7 @@ def test_app_config():
     app.config["CELERY_BROKER_URL"] = settings.CELERY_BROKER_URL
     app.config["CELERY_RESULT_BACKEND"] = settings.CELERY_RESULT_BACKEND
     app.config["MONGO_URI"] = settings.MONGO_URI
+    app.register_blueprint(answer.register)
 
     assert app.config["UPLOAD_FOLDER"] == "inputs"
     assert app.config["CELERY_BROKER_URL"] == settings.CELERY_BROKER_URL
