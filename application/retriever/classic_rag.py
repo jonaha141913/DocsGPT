@@ -4,7 +4,6 @@ import os
 from application.core.settings import settings
 from application.llm.llm_creator import LLMCreator
 from application.retriever.base import BaseRetriever
-
 from application.vectorstore.vector_creator import VectorCreator
 
 
@@ -113,8 +112,8 @@ class ClassicRAG(BaseRetriever):
             rephrased_query = self.llm.gen(model=self.gpt_model, messages=messages)
             print(f"Rephrased query: {rephrased_query}")
             return rephrased_query if rephrased_query else self.original_question
-        except Exception as e:
-            logging.error(f"Error rephrasing query: {e}", exc_info=True)
+        except Exception:
+            logging.exception("Error rephrasing query")
             return self.original_question
 
     def _get_data(self):
@@ -166,10 +165,9 @@ class ClassicRAG(BaseRetriever):
                                 "filename": filename,
                             }
                         )
-                except Exception as e:
-                    logging.error(
-                        f"Error searching vectorstore {vectorstore_id}: {e}",
-                        exc_info=True,
+                except Exception:
+                    logging.exception(
+                        f"Error searching vectorstore {vectorstore_id}"
                     )
                     continue
         return all_docs

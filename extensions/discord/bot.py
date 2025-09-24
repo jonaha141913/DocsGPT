@@ -1,10 +1,10 @@
 import os
 import re
 import logging
+import dotenv
 import aiohttp
 import discord
 from discord.ext import commands
-import dotenv
 
 dotenv.load_dotenv()
 
@@ -53,18 +53,18 @@ def escape_markdown(text):
     escape_chars = r'\*_$$$$()~>#+-=|{}.!'
     return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
 
-def split_string(input_str):
+def split_string(input_str, bot_id):
     """Splits the input string to detect bot mentions."""
-    pattern = r'^<@!?{0}>\s*'.format(bot.user.id)
+    pattern = r'^<@!?{0}>\s*'.format(bot_id)
     match = re.match(pattern, input_str)
     if match:
         content = input_str[match.end():].strip()
-        return str(bot.user.id), content
+        return str(bot_id), content
     return None, input_str
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user.name} has connected to Discord!')
+    print(f'{bot.user} has connected to Discord!')
 
 async def generate_answer(question, messages, conversation_id):
     """Generates an answer using the external API."""
@@ -78,13 +78,12 @@ async def generate_answer(question, messages, conversation_id):
         "Content-Type": "application/json; charset=utf-8"
     }
     timeout = aiohttp.ClientTimeout(total=60)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(API_URL, json=payload, headers=headers) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                conversation_id = data.get("conversation_id")
-                answer = data.get("answer", "Sorry, I couldn't find an answer.")
-                return {"answer": answer, "conversation_id": conversation_id}
+    async with aiohttp.ClientSession(timeout=timeout) as session, session.post(API_URL, json=payload, headers=headers) as resp:
+        if resp.status == 200:
+            data = await resp.json()
+            conversation_id = data.get("conversation_id")
+            answer = data.get("answer", "Sorry, I couldn't find an answer.")
+            return {"answer": answer, "conversation_id": conversation_id}
             else:
                 return {"answer": "Sorry, I couldn't find an answer.", "conversation_id": None}
 

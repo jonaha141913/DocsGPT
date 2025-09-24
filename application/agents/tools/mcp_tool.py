@@ -1,6 +1,5 @@
 import json
 import time
-from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -8,7 +7,7 @@ from application.agents.tools.base import Tool
 from application.security.encryption import decrypt_credentials
 
 
-_mcp_session_cache = {}
+_mcp_session_cache: dict[str, str] = {}
 
 
 class MCPTool(Tool):
@@ -119,7 +118,6 @@ class MCPTool(Tool):
             }
             response = self._make_mcp_request("initialize", init_params)
             self._make_mcp_request("notifications/initialized")
-
             return response
         except Exception as e:
             return {"error": str(e), "fallback": True}
@@ -127,7 +125,8 @@ class MCPTool(Tool):
     def _ensure_valid_session(self):
         """Ensure we have a valid MCP session, reinitializing if needed."""
         if not self._mcp_session_id:
-            self._initialize_mcp_connection()
+            return self._initialize_mcp_connection()
+        return None
 
     def _make_mcp_request(self, method: str, params: Optional[Dict] = None) -> Dict:
         """
@@ -211,6 +210,8 @@ class MCPTool(Tool):
                 self._invalidate_and_refresh_session()
                 return self._execute_mcp_request(mcp_message, method, is_retry=True)
             raise Exception(f"MCP server request failed: {str(e)}")
+        except Exception as e:
+            raise
 
     def _should_retry_with_new_session(self, error: Exception) -> bool:
         """Check if error indicates session invalidation and retry is warranted."""
@@ -268,7 +269,7 @@ class MCPTool(Tool):
                 self.available_tools = []
             return self.available_tools
         except Exception as e:
-            raise Exception(f"Failed to discover tools from MCP server: {str(e)}")
+            raise Exception(f"Failed to discover tools from MCP server: {str(e)}") from e
 
     def execute_action(self, action_name: str, **kwargs) -> Any:
         """
@@ -295,7 +296,7 @@ class MCPTool(Tool):
             result = self._make_mcp_request("tools/call", call_params)
             return result
         except Exception as e:
-            raise Exception(f"Failed to execute action '{action_name}': {str(e)}")
+            raise Exception(f"Failed to execute action '{action_name}': {str(e)}") from e
 
     def get_actions_metadata(self) -> List[Dict]:
         """
@@ -373,6 +374,7 @@ class MCPTool(Tool):
                 "message": f"Connection failed: {str(e)}",
                 "tools_count": 0,
                 "error_type": type(e).__name__,
+                "error": e,
             }
 
     def get_config_requirements(self) -> Dict:
