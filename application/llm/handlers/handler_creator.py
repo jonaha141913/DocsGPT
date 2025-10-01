@@ -3,8 +3,11 @@ from application.llm.handlers.google import GoogleLLMHandler
 from application.llm.handlers.openai import OpenAILLMHandler
 
 
+from typing import ClassVar
+
+
 class LLMHandlerCreator:
-    handlers = {
+    handlers: ClassVar[dict[str, type[LLMHandler]]] = {
         "openai": OpenAILLMHandler,
         "google": GoogleLLMHandler,
         "default": OpenAILLMHandler,

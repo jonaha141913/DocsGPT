@@ -1,8 +1,12 @@
 import logging
+from urllib.parse import urlparse
+
+from langchain_community.document_loaders import WebBaseLoader
+
 from application.parser.remote.base import BaseRemote
 from application.parser.schema.base import Document
-from langchain_community.document_loaders import WebBaseLoader
-from urllib.parse import urlparse
+
+logger = logging.getLogger(__name__)
 
 headers = {
     "User-Agent": "Mozilla/5.0",
@@ -40,6 +44,6 @@ class WebLoader(BaseRemote):
                         )
                     )
             except Exception as e:
-                logging.error(f"Error processing URL {url}: {e}", exc_info=True)
+                logger.exception(f"Error processing URL {url}: {e}")
                 continue
         return documents

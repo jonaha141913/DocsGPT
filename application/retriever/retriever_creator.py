@@ -1,8 +1,10 @@
+from typing import ClassVar
+
 from application.retriever.classic_rag import ClassicRAG
 
 
 class RetrieverCreator:
-    retrievers = {
+    retrievers: ClassVar[dict[str, type]] = {
         "classic": ClassicRAG,
         "default": ClassicRAG,
     }

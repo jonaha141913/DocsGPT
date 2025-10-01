@@ -7,39 +7,30 @@ import tempfile
 import uuid
 import zipfile
 from functools import wraps
-from typing import Optional, Tuple
+from typing import ClassVar
 from urllib.parse import unquote
 
 from bson.binary import Binary, UuidRepresentation
 from bson.dbref import DBRef
+from bson.errors import InvalidId
 from bson.objectid import ObjectId
 from flask import (
     Blueprint,
+    Response,
     current_app,
     jsonify,
     make_response,
     redirect,
     request,
-    Response,
 )
-from flask_restx import fields, inputs, Namespace, Resource
+from flask_restx import Namespace, Resource, fields, inputs
 from pymongo import ReturnDocument
 from werkzeug.utils import secure_filename
 
 from application.agents.tools.mcp_tool import MCPOAuthManager, MCPTool
-
 from application.agents.tools.tool_manager import ToolManager
 from application.api import api
-
-from application.api.user.tasks import (
-    ingest,
-    ingest_connector_task,
-    ingest_remote,
-    process_agent_webhook,
-    store_attachment,
-)
-
-from application.cache import get_redis_instance
+from application
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
 from application.parser.connectors.connector_creator import ConnectorCreator

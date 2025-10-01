@@ -1,8 +1,12 @@
 import logging
-import requests
 import re  # Import regular expression library
 import xml.etree.ElementTree as ET
+
+import requests
+
 from application.parser.remote.base import BaseRemote
+
+logger = logging.getLogger(__name__)
 
 class SitemapLoader(BaseRemote):
     def __init__(self, limit=20):
@@ -33,7 +37,7 @@ class SitemapLoader(BaseRemote):
                 documents.extend(loader.load())
                 processed_urls += 1  # Increment the counter after processing each URL
             except Exception as e:
-                logging.error(f"Error processing URL {url}: {e}", exc_info=True)
+                logger.exception(f"Error processing URL {url}: {e}")
                 continue
 
         return documents
@@ -59,10 +63,7 @@ class SitemapLoader(BaseRemote):
         if 'xml' in content_type or response.url.endswith('.xml'):
             return True
 
-        if '<sitemapindex' in response.text or '<urlset' in response.text:
-            return True
-
-        return False
+        return '<sitemapindex' in response.text or '<urlset' in response.text
 
     def _parse_sitemap(self, sitemap_content):
         # Remove namespaces

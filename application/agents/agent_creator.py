@@ -2,8 +2,11 @@ from application.agents.classic_agent import ClassicAgent
 from application.agents.react_agent import ReActAgent
 
 
+from typing import ClassVar
+
+
 class AgentCreator:
-    agents = {
+    agents: ClassVar[dict[str, type]] = {
         "classic": ClassicAgent,
         "react": ReActAgent,
     }
