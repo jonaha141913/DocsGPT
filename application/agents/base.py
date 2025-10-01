@@ -1,7 +1,8 @@
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, List, Optional
+from collections.abc import Generator
+from typing import Optional
 
 from bson.objectid import ObjectId
 
@@ -24,12 +25,12 @@ class BaseAgent(ABC):
         llm_name: str,
         gpt_model: str,
         api_key: str,
-        user_api_key: Optional[str] = None,
+        user_api_key: str | None = None,
         prompt: str = "",
-        chat_history: Optional[List[Dict]] = None,
-        decoded_token: Optional[Dict] = None,
-        attachments: Optional[List[Dict]] = None,
-        json_schema: Optional[Dict] = None,
+        chat_history: list[dict] | None = None,
+        decoded_token: dict | None = None,
+        attachments: list[dict] | None = None,
+        json_schema: dict | None = None,
     ):
         self.endpoint = endpoint
         self.llm_name = llm_name
@@ -39,10 +40,10 @@ class BaseAgent(ABC):
         self.prompt = prompt
         self.decoded_token = decoded_token or {}
         self.user: str = decoded_token.get("sub")
-        self.tool_config: Dict = {}
-        self.tools: List[Dict] = []
-        self.tool_calls: List[Dict] = []
-        self.chat_history: List[Dict] = chat_history if chat_history is not None else []
+        self.tool_config: dict = {}
+        self.tools: list[dict] = []
+        self.tool_calls: list[dict] = []
+        self.chat_history: list[dict] = chat_history if chat_history is not None else []
         self.llm = LLMCreator.create_llm(
             llm_name,
             api_key=api_key,
@@ -57,14 +58,14 @@ class BaseAgent(ABC):
 
     @log_activity()
     def gen(
-        self, query: str, retriever: BaseRetriever, log_context: LogContext = None
-    ) -> Generator[Dict, None, None]:
+        self, query: str, retriever: BaseRetriever, log_context: LogContext | None = None
+    ) -> Generator[dict, None, None]:
         yield from self._gen_inner(query, retriever, log_context)
 
     @abstractmethod
     def _gen_inner(
-        self, query: str, retriever: BaseRetriever, log_context: LogContext
-    ) -> Generator[Dict, None, None]:
+        self, query: str, retriever: BaseRetriever, log_context: LogContext | None = None
+    ) -> Generator[dict, None, None]:
         pass
 
     def _get_tools(self, api_key: str = None) -> Dict[str, Dict]:
@@ -228,12 +229,12 @@ class BaseAgent(ABC):
             user_id=self.user,  # Pass user ID for MCP tools credential decryption
         )
         if tool_data["name"] == "api_tool":
-            print(
+            logger.info(
                 f"Executing api: {action_name} with query_params: {query_params}, headers: {headers}, body: {body}"
             )
             result = tool.execute_action(action_name, **body)
         else:
-            print(f"Executing tool: {action_name} with args: {call_args}")
+            logger.info(f"Executing tool: {action_name} with args: {call_args}")
             result = tool.execute_action(action_name, **parameters)
         tool_call_data["result"] = (
             f"{str(result)[:50]}..." if len(str(result)) > 50 else result

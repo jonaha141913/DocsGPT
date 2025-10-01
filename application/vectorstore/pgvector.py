@@ -1,8 +1,8 @@
 import logging
-from typing import List, Optional, Any, Dict
 from application.core.settings import settings
 from application.vectorstore.base import BaseVectorStore
 from application.vectorstore.document_class import Document
+from typing import Optional, Any
 
 
 class PGVectorStore(BaseVectorStore):
@@ -14,7 +14,7 @@ class PGVectorStore(BaseVectorStore):
         vector_column: str = "embedding",
         text_column: str = "text",
         metadata_column: str = "metadata",
-        connection_string: str = None,
+        connection_string: str | None = None,
     ):
         super().__init__()
         # Store the source_id for use in add_chunk
@@ -102,7 +102,7 @@ class PGVectorStore(BaseVectorStore):
             conn.commit()
         except Exception as e:
             conn.rollback()
-            logging.error(f"Error creating table: {e}")
+            logging.getLogger(__name__).error(f"Error creating table: {e}")
             raise
         finally:
             cursor.close()
@@ -137,7 +137,7 @@ class PGVectorStore(BaseVectorStore):
             return documents
             
         except Exception as e:
-            logging.error(f"Error searching documents: {e}", exc_info=True)
+            logging.getLogger(__name__).exception(f"Error searching documents: {e}")
             return []
         finally:
             cursor.close()
@@ -180,7 +180,7 @@ class PGVectorStore(BaseVectorStore):
             
         except Exception as e:
             conn.rollback()
-            logging.error(f"Error adding texts: {e}")
+            logging.getLogger(__name__).error(f"Error adding texts: {e}")
             raise
         finally:
             cursor.close()
@@ -197,7 +197,7 @@ class PGVectorStore(BaseVectorStore):
             
         except Exception as e:
             conn.rollback()
-            logging.error(f"Error deleting index: {e}")
+            logging.getLogger(__name__).error(f"Error deleting index: {e}")
             raise
         finally:
             cursor.close()
@@ -231,7 +231,7 @@ class PGVectorStore(BaseVectorStore):
             return chunks
             
         except Exception as e:
-            logging.error(f"Error getting chunks: {e}")
+            logging.getLogger(__name__).error(f"Error getting chunks: {e}")
             return []
         finally:
             cursor.close()
@@ -272,7 +272,7 @@ class PGVectorStore(BaseVectorStore):
             
         except Exception as e:
             conn.rollback()
-            logging.error(f"Error adding chunk: {e}")
+            logging.getLogger(__name__).error(f"Error adding chunk: {e}")
             raise
         finally:
             cursor.close()
@@ -292,7 +292,7 @@ class PGVectorStore(BaseVectorStore):
             
         except Exception as e:
             conn.rollback()
-            logging.error(f"Error deleting chunk: {e}")
+            logging.getLogger(__name__).error(f"Error deleting chunk: {e}")
             return False
         finally:
             cursor.close()
