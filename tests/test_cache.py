@@ -1,5 +1,5 @@
-import unittest
 import json
+import unittest
 from unittest.mock import patch, MagicMock
 from application.cache import gen_cache_key, stream_cache, gen_cache
 from application.utils import get_hash

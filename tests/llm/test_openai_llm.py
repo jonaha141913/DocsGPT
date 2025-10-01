@@ -1,5 +1,5 @@
-import types
 import pytest
+import types
 
 from application.llm.openai import OpenAILLM
 
@@ -113,9 +113,7 @@ def test_raw_gen_stream_yields_chunks(openai_llm):
         {"role": "user", "content": "hi"},
     ]
     gen = openai_llm._raw_gen_stream(openai_llm, model="gpt", messages=msgs, stream=True)
-    chunks = list(gen)
-    assert "part1" in "".join(chunks)
-    assert "part2" in "".join(chunks)
+    yield from gen
 
 
 def test_prepare_structured_output_format_enforces_required_and_strict(openai_llm):

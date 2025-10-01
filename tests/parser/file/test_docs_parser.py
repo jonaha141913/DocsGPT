@@ -1,8 +1,8 @@
-import pytest
+from application.parser.file.docs_parser import PDFParser, DocxParser
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from application.parser.file.docs_parser import PDFParser, DocxParser
+import pytest
 
 
 @pytest.fixture

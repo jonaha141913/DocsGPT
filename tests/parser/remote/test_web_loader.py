@@ -203,10 +203,9 @@ class TestWebLoaderErrorHandling:
         result = web_loader.load_data("https://invalid-url.com")
 
         assert result == []  # Should return empty list on error
-        mock_logging.error.assert_called_once()
-        error_call = mock_logging.error.call_args
+        mock_logging.exception.assert_called_once()
+        error_call = mock_logging.exception.call_args
         assert "Error processing URL https://invalid-url.com" in error_call[0][0]
-        assert error_call[1]["exc_info"] is True
 
     @patch('application.parser.remote.web_loader.logging')
     def test_load_data_partial_failure(self, mock_logging, web_loader):
@@ -233,8 +232,8 @@ class TestWebLoaderErrorHandling:
         assert result[0].text == "Success content"
         assert result[0].extra_info == {"source": "https://good-url.com"}
 
-        mock_logging.error.assert_called_once()
-        error_call = mock_logging.error.call_args
+        mock_logging.exception.assert_called_once()
+        error_call = mock_logging.exception.call_args
         assert "Error processing URL https://bad-url.com" in error_call[0][0]
 
 

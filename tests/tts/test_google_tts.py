@@ -1,6 +1,6 @@
-import base64
-
 from application.tts.google_tts import GoogleTTS
+
+import base64
 
 
 def test_google_tts_text_to_speech(monkeypatch):
