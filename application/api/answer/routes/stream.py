@@ -5,9 +5,7 @@ from flask import request, Response
 from flask_restx import fields, Resource
 
 from application.api import api
-
 from application.api.answer.routes.base import answer_ns, BaseAnswerResource
-
 from application.api.answer.services.stream_processor import StreamProcessor
 
 logger = logging.getLogger(__name__)
@@ -96,9 +94,9 @@ class StreamResource(Resource, BaseAnswerResource):
             )
         except ValueError as e:
             message = "Malformed request body"
-            logger.error(
-                f"/stream - error: {message} - specific error: {str(e)} - traceback: {traceback.format_exc()}",
-                extra={"error": str(e), "traceback": traceback.format_exc()},
+            logger.exception(
+                f"/stream - error: {message} - specific error: {str(e)}",
+                extra={"error": str(e)},
             )
             return Response(
                 self.error_stream_generate(message),
@@ -106,9 +104,9 @@ class StreamResource(Resource, BaseAnswerResource):
                 mimetype="text/event-stream",
             )
         except Exception as e:
-            logger.error(
-                f"/stream - error: {str(e)} - traceback: {traceback.format_exc()}",
-                extra={"error": str(e), "traceback": traceback.format_exc()},
+            logger.exception(
+                f"/stream - error: {str(e)}",
+                extra={"error": str(e)},
             )
             return Response(
                 self.error_stream_generate("Unknown error occurred"),

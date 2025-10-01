@@ -60,15 +60,15 @@ def gen_cache(func):
                 cached_response = redis_client.get(cache_key)
                 if cached_response:
                     return cached_response.decode("utf-8")
-            except Exception as e:
-                logger.error(f"Error getting cached response: {e}", exc_info=True)
+            except redis.RedisError as e:
+                logger.exception(f"Error getting cached response: {e}")
 
         result = func(self, model, messages, stream, tools, *args, **kwargs)
         if redis_client and isinstance(result, str):
             try:
                 redis_client.set(cache_key, result, ex=1800)
-            except Exception as e:
-                logger.error(f"Error setting cache: {e}", exc_info=True)
+            except redis.RedisError as e:
+                logger.exception(f"Error setting cache: {e}")
 
         return result
 

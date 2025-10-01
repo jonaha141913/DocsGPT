@@ -1,9 +1,11 @@
 import os
 import re
 import logging
+
 import aiohttp
 import discord
 from discord.ext import commands
+
 import dotenv
 
 dotenv.load_dotenv()
@@ -64,7 +66,7 @@ def split_string(input_str):
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user.name} has connected to Discord!')
+    logger.info(f'{bot.user.name} has connected to Discord!')
 
 async def generate_answer(question, messages, conversation_id):
     """Generates an answer using the external API."""

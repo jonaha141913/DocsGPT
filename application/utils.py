@@ -120,7 +120,7 @@ def validate_required_fields(data, required_fields):
 
 
 def get_hash(data):
-    return hashlib.md5(data.encode(), usedforsecurity=False).hexdigest()
+    return hashlib.md5(data.encode()).hexdigest()
 
 
 def limit_chat_history(history, max_token_limit=None, gpt_model="docsgpt"):
@@ -130,13 +130,9 @@ def limit_chat_history(history, max_token_limit=None, gpt_model="docsgpt"):
     """
     from application.core.settings import settings
 
-    max_token_limit = (
-        max_token_limit
-        if max_token_limit
-        and max_token_limit
-        < settings.LLM_TOKEN_LIMITS.get(gpt_model, settings.DEFAULT_MAX_HISTORY)
-        else settings.LLM_TOKEN_LIMITS.get(gpt_model, settings.DEFAULT_MAX_HISTORY)
-    )
+    default_limit = settings.LLM_TOKEN_LIMITS.get(gpt_model, settings.DEFAULT_MAX_HISTORY)
+    if max_token_limit is None or max_token_limit >= default_limit:
+        max_token_limit = default_limit
 
     if not history:
         return []

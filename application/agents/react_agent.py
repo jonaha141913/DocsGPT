@@ -1,6 +1,6 @@
-import os
-from typing import Dict, Generator, List, Any
 import logging
+import os
+from typing import Any, Generator
 
 from application.agents.base import BaseAgent
 from application.logging import build_stack_data, LogContext
@@ -80,6 +80,7 @@ class ReActAgent(BaseAgent):
                 logger.debug(f"Response type {type(resp)} could not be iterated as a stream. It might be a non-streaming object not handled by specific checks.")
             except Exception as e:
                 logger.error(f"Error processing potential stream chunk: {e}, chunk was: {getattr(chunk, '__dict__', chunk)}")
+                raise
 
 
         return "".join(collected_content)

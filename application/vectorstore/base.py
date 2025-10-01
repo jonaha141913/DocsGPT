@@ -33,7 +33,7 @@ class EmbeddingsWrapper:
 
 
 class EmbeddingsSingleton:
-    _instances = {}
+    _instances = None
 
     @staticmethod
     def get_instance(embeddings_name, *args, **kwargs):
@@ -71,32 +71,32 @@ class BaseVectorStore(ABC):
     @abstractmethod
     def search(self, *args, **kwargs):
         """Search for similar documents/chunks in the vectorstore"""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def add_texts(self, texts, metadatas=None, *args, **kwargs):
         """Add texts with their embeddings to the vectorstore"""
-        pass
+        raise NotImplementedError
 
     def delete_index(self, *args, **kwargs):
         """Delete the entire index/collection"""
-        pass
+        raise NotImplementedError
 
     def save_local(self, *args, **kwargs):
         """Save vectorstore to local storage"""
-        pass
+        raise NotImplementedError
 
     def get_chunks(self, *args, **kwargs):
         """Get all chunks from the vectorstore"""
-        pass
+        raise NotImplementedError
 
     def add_chunk(self, text, metadata=None, *args, **kwargs):
         """Add a single chunk to the vectorstore"""
-        pass
+        raise NotImplementedError
 
     def delete_chunk(self, chunk_id, *args, **kwargs):
         """Delete a specific chunk from the vectorstore"""
-        pass
+        raise NotImplementedError
 
     def is_azure_configured(self):
         return (

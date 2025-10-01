@@ -1,7 +1,10 @@
-import os
+#!/usr/bin/env python3
 import logging
+import os
+
 from retry import retry
 from tqdm import tqdm
+
 from application.core.settings import settings
 from application.vectorstore.vector_creator import VectorCreator
 
@@ -33,11 +36,11 @@ def add_text_to_store_with_retry(store, doc, source_id):
     try:
         # Sanitize content to remove NUL characters that cause ingestion failures
         doc.page_content = sanitize_content(doc.page_content)
-        
+
         doc.metadata["source_id"] = str(source_id)
         store.add_texts([doc.page_content], metadatas=[doc.metadata])
     except Exception as e:
-        logging.error(f"Failed to add document with retry: {e}", exc_info=True)
+        logger.exception(f"Failed to add document with retry: {e}")
         raise
 
 

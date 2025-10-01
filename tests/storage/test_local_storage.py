@@ -3,10 +3,9 @@
 
 import io
 import os
-import pytest
-from unittest.mock import patch, MagicMock, mock_open
 
 from application.storage.local import LocalStorage
+from unittest.mock import MagicMock, patch
 
 
 @pytest.fixture
