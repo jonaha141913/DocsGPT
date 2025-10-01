@@ -1,7 +1,7 @@
-import logging
 from application.core.settings import settings
 from application.vectorstore.base import BaseVectorStore
 from application.vectorstore.document_class import Document
+import logging
 
 
 class MongoDBVectorStore(BaseVectorStore):
@@ -147,7 +147,7 @@ class MongoDBVectorStore(BaseVectorStore):
 
             return chunks
         except Exception as e:
-            logging.error(f"Error getting chunks: {e}", exc_info=True)
+            logging.exception(f"Error getting chunks: {e}")
             return []
 
     def add_chunk(self, text, metadata=None):
@@ -173,5 +173,5 @@ class MongoDBVectorStore(BaseVectorStore):
             result = self._collection.delete_one({"_id": object_id})
             return result.deleted_count > 0
         except Exception as e:
-            logging.error(f"Error deleting chunk: {e}", exc_info=True)
+            logging.exception(f"Error deleting chunk: {e}")
             return False

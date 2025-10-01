@@ -1,7 +1,8 @@
-from application.llm.base import BaseLLM
-from application.core.settings import settings
-import json
 import io
+import json
+
+from application.core.settings import settings
+from application.llm.base import BaseLLM
 
 
 class LineIterator:
@@ -100,7 +101,6 @@ class SagemakerAPILLM(BaseLLM):
             EndpointName=self.endpoint, ContentType="application/json", Body=body_bytes
         )
         result = json.loads(response["Body"].read().decode())
-        import sys
 
         print(result[0]["generated_text"], file=sys.stderr)
         return result[0]["generated_text"][len(prompt) :]

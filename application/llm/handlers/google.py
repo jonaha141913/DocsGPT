@@ -1,5 +1,6 @@
 import uuid
-from typing import Any, Dict, Generator
+from collections.abc import Generator
+from typing import Any
 
 from application.llm.handlers.base import LLMHandler, LLMResponse, ToolCall
 
@@ -72,7 +73,7 @@ class GoogleLLMHandler(LLMHandler):
             ],
         }
 
-    def _iterate_stream(self, response: Any) -> Generator:
+    def _iterate_stream(self, response: Any) -> Generator[Dict, None, None]:
         """Iterate through Google streaming response."""
         for chunk in response:
             yield chunk

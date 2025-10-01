@@ -1,14 +1,17 @@
-from application.llm.base import BaseLLM
-from application.core.settings import settings
 import threading
+
+from application.core.settings import settings
+from application.llm.base import BaseLLM
 
 
 class LlamaSingleton:
-    _instances = {}
+    _instances = None
     _lock = threading.Lock()  # Add a lock for thread synchronization
 
     @classmethod
     def get_instance(cls, llm_name):
+        if cls._instances is None:
+            cls._instances = {}
         if llm_name not in cls._instances:
             try:
                 from llama_cpp import Llama

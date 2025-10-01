@@ -1,13 +1,13 @@
 import logging
+from urllib.parse import urlparse
+
 from application.parser.remote.base import BaseRemote
 from application.parser.schema.base import Document
 from langchain_community.document_loaders import WebBaseLoader
-from urllib.parse import urlparse
 
 headers = {
     "User-Agent": "Mozilla/5.0",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*"
-    ";q=0.8",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.5",
     "Referer": "https://www.google.com/",
     "DNT": "1",
@@ -17,8 +17,8 @@ headers = {
 
 
 class WebLoader(BaseRemote):
-    def __init__(self):
-        self.loader = WebBaseLoader
+    def __init__(self, url: str):
+        self.loader = WebBaseLoader(url)
 
     def load_data(self, inputs):
         urls = inputs
@@ -30,7 +30,7 @@ class WebLoader(BaseRemote):
             if not urlparse(url).scheme:
                 url = "http://" + url
             try:
-                loader = self.loader([url], header_template=headers)
+                loader = WebBaseLoader(url, header_template=headers)
                 loaded_docs = loader.load()
                 for doc in loaded_docs:
                     documents.append(
@@ -39,7 +39,7 @@ class WebLoader(BaseRemote):
                             extra_info=doc.metadata,
                         )
                     )
-            except Exception as e:
-                logging.error(f"Error processing URL {url}: {e}", exc_info=True)
+            except Exception:
+                logging.exception(f"Error processing URL {url}")
                 continue
         return documents

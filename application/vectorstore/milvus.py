@@ -1,6 +1,4 @@
-from typing import List, Optional
 from uuid import uuid4
-
 
 from application.core.settings import settings
 from application.vectorstore.base import BaseVectorStore
@@ -22,17 +20,19 @@ class MilvusStore(BaseVectorStore):
         )
         self._source_id = source_id
 
-    def search(self, question, k=2, *args, **kwargs):
+    def search(self, question: str, k: int = 2, *args, **kwargs) -> list:
         expr = f"source_id == '{self._source_id}'"
         return self._docsearch.similarity_search(query=question, k=k, expr=expr, *args, **kwargs)
 
-    def add_texts(self, texts: List[str], metadatas: Optional[List[dict]], *args, **kwargs):
+    def add_texts(
+        self, texts: list[str], metadatas: list[dict] | None, *args, **kwargs
+    ) -> list:
         ids = [str(uuid4()) for _ in range(len(texts))]
 
         return self._docsearch.add_texts(texts=texts, metadatas=metadatas, ids=ids, *args, **kwargs)
 
     def save_local(self, *args, **kwargs):
-        pass
+        pass  # TODO: Implement save_local functionality
 
     def delete_index(self, *args, **kwargs):
-        pass
+        pass  # TODO: Implement delete_index functionality

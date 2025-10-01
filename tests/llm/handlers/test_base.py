@@ -1,7 +1,8 @@
-from unittest.mock import Mock, patch
-from typing import Any, Dict, Generator
+from collections.abc import Generator
+from typing import Any
 
 from application.llm.handlers.base import LLMHandler, LLMResponse, ToolCall
+from unittest.mock import Mock, patch
 
 
 class TestToolCall:
@@ -112,7 +113,7 @@ class ConcreteHandler(LLMHandler):
             "tool_call_id": tool_call.id
         }
 
-    def _iterate_stream(self, response: Any) -> Generator:
+    def _iterate_stream(self, response: Any) -> Generator[str]:
         for chunk in response:
             yield chunk
 

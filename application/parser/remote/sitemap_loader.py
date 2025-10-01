@@ -1,6 +1,6 @@
 import logging
+import re
 import requests
-import re  # Import regular expression library
 import xml.etree.ElementTree as ET
 from application.parser.remote.base import BaseRemote
 
@@ -18,7 +18,7 @@ class SitemapLoader(BaseRemote):
 
         urls = self._extract_urls(sitemap_url)
         if not urls:
-            print(f"No URLs found in the sitemap: {sitemap_url}")
+            logging.info(f"No URLs found in the sitemap: {sitemap_url}")
             return []
 
         # Load content of extracted URLs
@@ -32,8 +32,8 @@ class SitemapLoader(BaseRemote):
                 loader = self.loader([url])
                 documents.extend(loader.load())
                 processed_urls += 1  # Increment the counter after processing each URL
-            except Exception as e:
-                logging.error(f"Error processing URL {url}: {e}", exc_info=True)
+            except requests.exceptions.RequestException as e:
+                logging.exception(f"Error processing URL {url}: {e}")
                 continue
 
         return documents
@@ -43,7 +43,7 @@ class SitemapLoader(BaseRemote):
             response = requests.get(sitemap_url)
             response.raise_for_status()  # Raise an exception for HTTP errors
         except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError) as e:
-            print(f"Failed to fetch sitemap: {sitemap_url}. Error: {e}")
+            logging.error(f"Failed to fetch sitemap: {sitemap_url}. Error: {e}")
             return []
 
         # Determine if this is a sitemap or a URL

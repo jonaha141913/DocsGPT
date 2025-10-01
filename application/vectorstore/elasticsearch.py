@@ -1,5 +1,5 @@
-from application.vectorstore.base import BaseVectorStore
 from application.core.settings import settings
+from application.vectorstore.base import BaseVectorStore
 from application.vectorstore.document_class import Document
 
 
@@ -29,6 +29,7 @@ class ElasticsearchStore(BaseVectorStore):
         self.docsearch = ElasticsearchStore._es_connection
 
     def connect_to_elasticsearch(
+        self,
         *,
         es_url = None,
         cloud_id = None,
@@ -69,7 +70,7 @@ class ElasticsearchStore(BaseVectorStore):
         try:
             es_client.info()
         except Exception as e:
-            raise e
+            raise RuntimeError(f"Failed to connect to Elasticsearch: {e}") from e
 
         return es_client
 
@@ -112,16 +113,16 @@ class ElasticsearchStore(BaseVectorStore):
     def _create_index_if_not_exists(
             self, index_name, dims_length
         ):
-
-        if self._es_connection.indices.exists(index=index_name):
-            print(f"Index {index_name} already exists.")
-
-        else:
-
-            indexSettings = self.index(
-                dims_length=dims_length,
-            )
-            self._es_connection.indices.create(index=index_name, **indexSettings)
+        try:
+            if self._es_connection.indices.exists(index=index_name):
+                print(f"Index {index_name} already exists.")
+            else:
+                indexSettings = self.index(
+                    dims_length=dims_length,
+                )
+                self._es_connection.indices.create(index=index_name, **indexSettings)
+        except Exception as e:
+            raise RuntimeError(f"Failed to create or check index {index_name}: {e}") from e
 
     def index(
             self,
@@ -197,11 +198,14 @@ class ElasticsearchStore(BaseVectorStore):
                 print(f"Error adding texts: {e}")
                 firstError = e.errors[0].get("index", {}).get("error", {})
                 print(f"First error reason: {firstError.get('reason')}")
-                raise e
+                raise RuntimeError(f"Bulk indexing failed: {e}") from e
 
         else:
             return []
 
     def delete_index(self):
-        self._es_connection.delete_by_query(index=self.index_name, query={"match": {
-                                      "metadata.source_id.keyword": self.source_id}},)
+        try:
+            self._es_connection.delete_by_query(index=self.index_name, query={"match": {
+                                          "metadata.source_id.keyword": self.source_id}},)
+        except Exception as e:
+            raise RuntimeError(f"Failed to delete index: {e}") from e

@@ -5,7 +5,7 @@ Contains parser for md files.
 """
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
+from typing import Any, cast
 
 import tiktoken
 from application.parser.file.base_parser import BaseParser
@@ -63,7 +63,7 @@ class MarkdownParser(BaseParser):
             header_match = re.match(r"^#+\s", line)
             if header_match:
                 if current_header is not None:
-                    if current_text == "" or None:
+                    if current_text == "" or current_text is None:
                         continue
                     markdown_tups = self.tups_chunk_append(markdown_tups, current_header, current_text)
 
@@ -76,7 +76,7 @@ class MarkdownParser(BaseParser):
         if current_header is not None:
             # pass linting, assert keys are defined
             markdown_tups = [
-                (re.sub(r"#", "", cast(str, key)).strip(), re.sub(r"<.*?>", "", value))
+                (re.sub(r"#", "", key).strip(), re.sub(r"<.*?>", "", value))
                 for key, value in markdown_tups
             ]
         else:

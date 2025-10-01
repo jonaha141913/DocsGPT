@@ -1,9 +1,10 @@
-import os
-import re
-import logging
 import aiohttp
 import discord
+import logging
+import os
+import re
 from discord.ext import commands
+
 import dotenv
 
 dotenv.load_dotenv()
@@ -64,7 +65,7 @@ def split_string(input_str):
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user.name} has connected to Discord!')
+    logger.info(f'{bot.user.name} has connected to Discord!')
 
 async def generate_answer(question, messages, conversation_id):
     """Generates an answer using the external API."""
@@ -146,7 +147,7 @@ async def on_message(message):
     conversation_id = response_doc["conversation_id"]
 
     answer_chunks = chunk_string(answer)
-    for chunk in answer_chunks:
+    async for chunk in answer_chunks:
         await message.channel.send(chunk)
 
     conversation["history"][-1]["response"] = answer

@@ -1,8 +1,8 @@
-from application.parser.remote.sitemap_loader import SitemapLoader
 from application.parser.remote.crawler_loader import CrawlerLoader
-from application.parser.remote.web_loader import WebLoader
-from application.parser.remote.reddit_loader import RedditPostsLoaderRemote
 from application.parser.remote.github_loader import GitHubLoader
+from application.parser.remote.reddit_loader import RedditPostsLoaderRemote
+from application.parser.remote.sitemap_loader import SitemapLoader
+from application.parser.remote.web_loader import WebLoader
 
 
 class RemoteCreator:
@@ -16,16 +16,18 @@ class RemoteCreator:
     use ConnectorCreator instead.
     """
 
-    loaders = {
-        "url": WebLoader,
-        "sitemap": SitemapLoader,
-        "crawler": CrawlerLoader,
-        "reddit": RedditPostsLoaderRemote,
-        "github": GitHubLoader,
-    }
+    loaders: dict[str, type] = {}
 
     @classmethod
     def create_loader(cls, type, *args, **kwargs):
+        if not cls.loaders:
+            cls.loaders = {
+                "url": WebLoader,
+                "sitemap": SitemapLoader,
+                "crawler": CrawlerLoader,
+                "reddit": RedditPostsLoaderRemote,
+                "github": GitHubLoader,
+            }
         loader_class = cls.loaders.get(type.lower())
         if not loader_class:
             raise ValueError(f"No loader class found for type {type}")

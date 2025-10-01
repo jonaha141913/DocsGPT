@@ -1,6 +1,6 @@
-import re
-from typing import List, Tuple
 import logging
+import re
+
 from application.parser.schema.base import Document
 from application.utils import get_encoding
 

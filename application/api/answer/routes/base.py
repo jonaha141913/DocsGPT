@@ -1,17 +1,16 @@
 import datetime
 import json
 import logging
-from typing import Any, Dict, Generator, List, Optional
-
-from flask import Response
-from flask_restx import Namespace
+from collections.abc import Generator
+from typing import Any, Dict, List, Optional
 
 from application.api.answer.services.conversation_service import ConversationService
-
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
 from application.llm.llm_creator import LLMCreator
 from application.utils import check_required_fields, get_gpt_model
+from flask import Response
+from flask_restx import Namespace
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +193,7 @@ class BaseAnswerResource:
             data = json.dumps({"type": "end"})
             yield f"data: {data}\n\n"
         except Exception as e:
-            logger.error(f"Error in stream: {str(e)}", exc_info=True)
+            logger.exception(f"Error in stream: {str(e)}")
             data = json.dumps(
                 {
                     "type": "error",

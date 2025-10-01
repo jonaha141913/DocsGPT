@@ -1,7 +1,6 @@
 """Tests for LocalStorage implementation
 """
 
-import io
 import os
 import pytest
 from unittest.mock import patch, MagicMock, mock_open

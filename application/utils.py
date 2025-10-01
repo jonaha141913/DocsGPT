@@ -7,7 +7,7 @@ import tiktoken
 from flask import jsonify, make_response
 from werkzeug.utils import secure_filename
 
-from application.core.settings import settings
+from application.core import settings
 
 
 _encoding = None
@@ -128,15 +128,14 @@ def limit_chat_history(history, max_token_limit=None, gpt_model="docsgpt"):
     Limits chat history based on token count.
     Returns a list of messages that fit within the token limit.
     """
-    from application.core.settings import settings
+    from application.core import settings
 
-    max_token_limit = (
-        max_token_limit
-        if max_token_limit
-        and max_token_limit
-        < settings.LLM_TOKEN_LIMITS.get(gpt_model, settings.DEFAULT_MAX_HISTORY)
-        else settings.LLM_TOKEN_LIMITS.get(gpt_model, settings.DEFAULT_MAX_HISTORY)
-    )
+    if max_token_limit and max_token_limit < settings.LLM_TOKEN_LIMITS.get(gpt_model, settings.DEFAULT_MAX_HISTORY):
+        final_limit = max_token_limit
+    else:
+        final_limit = settings.LLM_TOKEN_LIMITS.get(gpt_model, settings.DEFAULT_MAX_HISTORY)
+
+    max_token_limit = final_limit
 
     if not history:
         return []
