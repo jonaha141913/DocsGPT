@@ -1,7 +1,8 @@
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Any, Dict, Generator, List, Optional, Union
+from typing import Any, Optional, Union
 
 from application.logging import build_stack_data
 
@@ -53,17 +54,17 @@ class LLMHandler(ABC):
     @abstractmethod
     def parse_response(self, response: Any) -> LLMResponse:
         """Parse raw LLM response into standardized format."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    def create_tool_message(self, tool_call: ToolCall, result: Any) -> Dict:
+    def create_tool_message(self, tool_call: ToolCall, result: Any) -> dict:
         """Create a tool result message for the conversation history."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def _iterate_stream(self, response: Any) -> Generator:
         """Iterate through streaming response chunks."""
-        pass
+        raise NotImplementedError
 
     def process_message_flow(
         self,
@@ -254,7 +255,7 @@ class LLMHandler(ABC):
         return updated_messages
 
     def handle_non_streaming(
-        self, agent, response: Any, tools_dict: Dict, messages: List[Dict]
+        self, agent, response: Any, tools_dict: dict, messages: list[dict]
     ) -> Generator:
         """
         Handle non-streaming response flow.
@@ -289,7 +290,7 @@ class LLMHandler(ABC):
         return parsed.content
 
     def handle_streaming(
-        self, agent, response: Any, tools_dict: Dict, messages: List[Dict]
+        self, agent, response: Any, tools_dict: dict, messages: list[dict]
     ) -> Generator:
         """
         Handle streaming response flow.

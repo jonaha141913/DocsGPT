@@ -1,5 +1,4 @@
 import logging
-from typing import List, Optional, Any, Dict
 from application.core.settings import settings
 from application.vectorstore.base import BaseVectorStore
 from application.vectorstore.document_class import Document
@@ -14,7 +13,7 @@ class PGVectorStore(BaseVectorStore):
         vector_column: str = "embedding",
         text_column: str = "text",
         metadata_column: str = "metadata",
-        connection_string: str = None,
+        connection_string: str | None = None,
     ):
         super().__init__()
         # Store the source_id for use in add_chunk
@@ -100,14 +99,14 @@ class PGVectorStore(BaseVectorStore):
             cursor.execute(source_index_query)
             
             conn.commit()
-        except Exception as e:
+        except (psycopg2.Error, Exception) as e:
             conn.rollback()
             logging.error(f"Error creating table: {e}")
             raise
         finally:
             cursor.close()
 
-    def search(self, question: str, k: int = 2, *args, **kwargs) -> List[Document]:
+    def search(self, question: str, k: int = 2, *args, **kwargs) -> list[Document]:
         """Search for similar documents using vector similarity"""
         query_vector = self._embedding.embed_query(question)
         
@@ -137,18 +136,18 @@ class PGVectorStore(BaseVectorStore):
             return documents
             
         except Exception as e:
-            logging.error(f"Error searching documents: {e}", exc_info=True)
+            logging.exception(f"Error searching documents: {e}")
             return []
         finally:
             cursor.close()
 
     def add_texts(
         self,
-        texts: List[str],
-        metadatas: Optional[List[Dict[str, Any]]] = None,
+        texts: list[str],
+        metadatas: list[dict[str, Any]] | None = None,
         *args,
         **kwargs,
-    ) -> List[str]:
+    ) -> list[str]:
         """Add texts with their embeddings to the vector store"""
         if not texts:
             return []
@@ -178,7 +177,7 @@ class PGVectorStore(BaseVectorStore):
             conn.commit()
             return inserted_ids
             
-        except Exception as e:
+        except (psycopg2.Error, Exception) as e:
             conn.rollback()
             logging.error(f"Error adding texts: {e}")
             raise
@@ -195,7 +194,7 @@ class PGVectorStore(BaseVectorStore):
             cursor.execute(delete_query, (self._source_id,))
             conn.commit()
             
-        except Exception as e:
+        except (psycopg2.Error, Exception) as e:
             conn.rollback()
             logging.error(f"Error deleting index: {e}")
             raise
@@ -206,7 +205,7 @@ class PGVectorStore(BaseVectorStore):
         """No-op for PostgreSQL - data is already persisted"""
         pass
 
-    def get_chunks(self) -> List[Dict[str, Any]]:
+    def get_chunks(self) -> list[dict[str, Any]]:
         """Get all chunks for this source_id"""
         conn = self._get_connection()
         cursor = conn.cursor()
@@ -230,13 +229,13 @@ class PGVectorStore(BaseVectorStore):
             
             return chunks
             
-        except Exception as e:
+        except (psycopg2.Error, Exception) as e:
             logging.error(f"Error getting chunks: {e}")
             return []
         finally:
             cursor.close()
 
-    def add_chunk(self, text: str, metadata: Optional[Dict[str, Any]] = None) -> str:
+    def add_chunk(self, text: str, metadata: dict[str, Any] | None = None) -> str:
         """Add a single chunk to the vector store"""
         metadata = metadata or {}
         
@@ -270,9 +269,9 @@ class PGVectorStore(BaseVectorStore):
             
             return str(inserted_id)
             
-        except Exception as e:
+        except (psycopg2.Error, Exception) as e:
             conn.rollback()
-            logging.error(f"Error adding chunk: {e}")
+            logging.exception(f"Error adding chunk: {e}")
             raise
         finally:
             cursor.close()
@@ -290,9 +289,9 @@ class PGVectorStore(BaseVectorStore):
             
             return deleted_count > 0
             
-        except Exception as e:
+        except (psycopg2.Error, Exception) as e:
             conn.rollback()
-            logging.error(f"Error deleting chunk: {e}")
+            logging.exception(f"Error deleting chunk: {e}")
             return False
         finally:
             cursor.close()

@@ -1,10 +1,11 @@
+import logging
 import os
 import re
-import logging
+
 import aiohttp
 import discord
-from discord.ext import commands
 import dotenv
+from discord.ext import commands
 
 dotenv.load_dotenv()
 
@@ -78,13 +79,12 @@ async def generate_answer(question, messages, conversation_id):
         "Content-Type": "application/json; charset=utf-8"
     }
     timeout = aiohttp.ClientTimeout(total=60)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(API_URL, json=payload, headers=headers) as resp:
-            if resp.status == 200:
-                data = await resp.json()
-                conversation_id = data.get("conversation_id")
-                answer = data.get("answer", "Sorry, I couldn't find an answer.")
-                return {"answer": answer, "conversation_id": conversation_id}
+    async with aiohttp.ClientSession(timeout=timeout) as session, session.post(API_URL, json=payload, headers=headers) as resp:
+        if resp.status == 200:
+            data = await resp.json()
+            conversation_id = data.get("conversation_id")
+            answer = data.get("answer", "Sorry, I couldn't find an answer.")
+            return {"answer": answer, "conversation_id": conversation_id}
             else:
                 return {"answer": "Sorry, I couldn't find an answer.", "conversation_id": None}
 
@@ -97,10 +97,10 @@ async def start(ctx):
 async def custom_help_command(ctx):
     """Handles the /custom_help command."""
     help_text = (
-        "Here are the available commands:\n"
-        "`!start` - Begin a new conversation with the bot\n"
-        "`!help` - Display this help message\n\n"
-        "You can also mention me or send a direct message to ask a question!"
+        f"Here are the available commands:\n"
+        f"`!start` - Begin a new conversation with the bot\n"
+        f"`!help` - Display this help message\n\n"
+        f"You can also mention me or send a direct message to ask a question!"
     )
     await ctx.send(help_text)
 

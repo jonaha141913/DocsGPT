@@ -6,6 +6,8 @@ from application.core.settings import settings
 from application.llm.base import BaseLLM
 from application.storage.storage_creator import StorageCreator
 
+logger = logging.getLogger(__name__)
+
 
 class OpenAILLM(BaseLLM):
 
@@ -239,8 +241,8 @@ class OpenAILLM(BaseLLM):
 
             return result
 
-        except Exception as e:
-            logging.error(f"Error preparing structured output format: {e}")
+        except (TypeError, KeyError) as e:
+            logger.error(f"Error preparing structured output format: {e}")
             return None
 
     def get_supported_attachment_types(self):
@@ -287,13 +289,13 @@ class OpenAILLM(BaseLLM):
             prepared_messages.append(user_message)
             user_message_index = len(prepared_messages) - 1
 
-        if isinstance(prepared_messages[user_message_index].get("content"), str):
-            text_content = prepared_messages[user_message_index]["content"]
-            prepared_messages[user_message_index]["content"] = [
-                {"type": "text", "text": text_content}
-            ]
-        elif not isinstance(prepared_messages[user_message_index].get("content"), list):
-            prepared_messages[user_message_index]["content"] = []
+        prepared_messages[user_message_index]["content"] = (
+            [{"type": "text", "text": prepared_messages[user_message_index]["content"]}]
+            if isinstance(prepared_messages[user_message_index].get("content"), str)
+            else []
+            if not isinstance(prepared_messages[user_message_index].get("content"), list)
+            else prepared_messages[user_message_index].get("content")
+        )
 
         for attachment in attachments:
             mime_type = attachment.get("mime_type")
@@ -309,10 +311,8 @@ class OpenAILLM(BaseLLM):
                             },
                         }
                     )
-                except Exception as e:
-                    logging.error(
-                        f"Error processing image attachment: {e}", exc_info=True
-                    )
+                except (OSError, ValueError) as e:
+                    logger.exception("Error processing image attachment")
                     if "content" in attachment:
                         prepared_messages[user_message_index]["content"].append(
                             {
@@ -327,8 +327,8 @@ class OpenAILLM(BaseLLM):
                     prepared_messages[user_message_index]["content"].append(
                         {"type": "file", "file": {"file_id": file_id}}
                     )
-                except Exception as e:
-                    logging.error(f"Error uploading PDF to OpenAI: {e}", exc_info=True)
+                except (OSError, ValueError) as e:
+                    logger.exception("Error uploading PDF to OpenAI")
                     if "content" in attachment:
                         prepared_messages[user_message_index]["content"].append(
                             {
@@ -372,8 +372,6 @@ class OpenAILLM(BaseLLM):
         Returns:
             str: OpenAI file_id for the uploaded file.
         """
-        import logging
-
         if "openai_file_id" in attachment:
             return attachment["openai_file_id"]
 
@@ -401,8 +399,8 @@ class OpenAILLM(BaseLLM):
                 )
 
             return file_id
-        except Exception as e:
-            logging.error(f"Error uploading file to OpenAI: {e}", exc_info=True)
+        except (OSError, ValueError) as e:
+            logger.exception("Error uploading file to OpenAI")
             raise
 
 
