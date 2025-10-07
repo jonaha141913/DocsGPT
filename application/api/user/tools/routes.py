@@ -2,7 +2,7 @@
 
 from bson.objectid import ObjectId
 from flask import current_app, jsonify, make_response, request
-from flask_restx import fields, Namespace, Resource
+from flask_restx import Namespace, Resource, fields
 
 from application.agents.tools.tool_manager import ToolManager
 from application.api import api
@@ -37,9 +37,7 @@ class AvailableTools(Resource):
                     }
                 )
         except Exception as err:
-            current_app.logger.error(
-                f"Error getting available tools: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error getting available tools: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True, "data": tools_metadata}), 200)
 
@@ -60,7 +58,7 @@ class GetTools(Resource):
                 tool.pop("_id")
                 user_tools.append(tool)
         except Exception as err:
-            current_app.logger.error(f"Error getting user tools: {err}", exc_info=True)
+            current_app.logger.exception(f"Error getting user tools: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True, "tools": user_tools}), 200)
 
@@ -117,18 +115,13 @@ class CreateTool(Resource):
             transformed_actions = []
             for action in actions_metadata:
                 action["active"] = True
-                if "parameters" in action:
-                    if "properties" in action["parameters"]:
-                        for param_name, param_details in action["parameters"][
-                            "properties"
-                        ].items():
-                            param_details["filled_by_llm"] = True
-                            param_details["value"] = ""
+                if "parameters" in action and "properties" in action["parameters"]:
+                    for param_details in action["parameters"]["properties"].values():
+                        param_details["filled_by_llm"] = True
+                        param_details["value"] = ""
                 transformed_actions.append(action)
         except Exception as err:
-            current_app.logger.error(
-                f"Error getting tool actions: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error getting tool actions: {err}")
             return make_response(jsonify({"success": False}), 400)
         try:
             new_tool = {
@@ -144,7 +137,7 @@ class CreateTool(Resource):
             resp = user_tools_collection.insert_one(new_tool)
             new_id = str(resp.inserted_id)
         except Exception as err:
-            current_app.logger.error(f"Error creating tool: {err}", exc_info=True)
+            current_app.logger.exception(f"Error creating tool: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": new_id}), 200)
 
@@ -222,21 +215,21 @@ class UpdateTool(Resource):
                     auth_credentials = existing_credentials.copy()
                     auth_type = storage_config.get("auth_type", "none")
                     if auth_type == "api_key":
-                        if "api_key" in config and config["api_key"]:
+                        if config.get("api_key"):
                             auth_credentials["api_key"] = config["api_key"]
                         if "api_key_header" in config:
                             auth_credentials["api_key_header"] = config[
                                 "api_key_header"
                             ]
                     elif auth_type == "bearer":
-                        if "bearer_token" in config and config["bearer_token"]:
+                        if config.get("bearer_token"):
                             auth_credentials["bearer_token"] = config["bearer_token"]
-                        elif "encrypted_token" in config and config["encrypted_token"]:
+                        elif config.get("encrypted_token"):
                             auth_credentials["bearer_token"] = config["encrypted_token"]
                     elif auth_type == "basic":
-                        if "username" in config and config["username"]:
+                        if config.get("username"):
                             auth_credentials["username"] = config["username"]
-                        if "password" in config and config["password"]:
+                        if config.get("password"):
                             auth_credentials["password"] = config["password"]
                     if auth_type != "none" and auth_credentials:
                         encrypted_credentials_string = encrypt_credentials(
@@ -266,7 +259,7 @@ class UpdateTool(Resource):
                 {"$set": update_data},
             )
         except Exception as err:
-            current_app.logger.error(f"Error updating tool: {err}", exc_info=True)
+            current_app.logger.exception(f"Error updating tool: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -301,9 +294,7 @@ class UpdateToolConfig(Resource):
                 {"$set": {"config": data["config"]}},
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating tool config: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating tool config: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -340,9 +331,7 @@ class UpdateToolActions(Resource):
                 {"$set": {"actions": data["actions"]}},
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating tool actions: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating tool actions: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -377,9 +366,7 @@ class UpdateToolStatus(Resource):
                 {"$set": {"status": data["status"]}},
             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating tool status: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating tool status: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": True}), 200)
 
@@ -410,6 +397,6 @@ class DeleteTool(Resource):
             if result.deleted_count == 0:
                 return {"success": False, "message": "Tool not found"}, 404
         except Exception as err:
-            current_app.logger.error(f"Error deleting tool: {err}", exc_info=True)
+            current_app.logger.exception(f"Error deleting tool: {err}")
             return {"success": False}, 400
         return {"success": True}, 200
