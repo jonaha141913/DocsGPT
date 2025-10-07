@@ -1,7 +1,7 @@
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, List, Optional
+from typing import Dict, List, Optional
 
 from bson.objectid import ObjectId
 
@@ -57,17 +57,17 @@ class BaseAgent(ABC):
 
     @log_activity()
     def gen(
-        self, query: str, retriever: BaseRetriever, log_context: LogContext = None
+        self, query: str, retriever: BaseRetriever, log_context: Optional[LogContext] = None
     ) -> Generator[Dict, None, None]:
         yield from self._gen_inner(query, retriever, log_context)
 
     @abstractmethod
     def _gen_inner(
-        self, query: str, retriever: BaseRetriever, log_context: LogContext
+        self, query: str, retriever: BaseRetriever, log_context: Optional[LogContext]
     ) -> Generator[Dict, None, None]:
         pass
 
-    def _get_tools(self, api_key: str = None) -> Dict[str, Dict]:
+    def _get_tools(self, api_key: Optional[str] = None) -> Dict[str, Dict]:
         mongo = MongoDB.get_client()
         db = mongo[settings.MONGO_DB_NAME]
         agents_collection = db["agents"]
@@ -88,7 +88,7 @@ class BaseAgent(ABC):
 
         return tools_by_id
 
-    def _get_user_tools(self, user="local"):
+    def _get_user_tools(self, user: Optional[str] = "local"):
         mongo = MongoDB.get_client()
         db = mongo[settings.MONGO_DB_NAME]
         user_tools_collection = db["user_tools"]

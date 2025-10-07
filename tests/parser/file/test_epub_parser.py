@@ -1,8 +1,8 @@
 import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
 import sys
 import types
+from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 from application.parser.file.epub_parser import EpubParser
 
@@ -81,7 +81,12 @@ def test_epub_parser_successful_parsing(epub_parser):
         "ebooklib.epub": fake_epub,
         "html2text": fake_html2text
     }):
-        result = epub_parser.parse_file(Path("test.epub"))
+        with patch.dict(sys.modules, {
+            "ebooklib": fake_ebooklib,
+            "ebooklib.epub": fake_epub,
+            "html2text": fake_html2text
+        }):
+            result = epub_parser.parse_file(Path("test.epub"))
     
     expected_result = "# Chapter 1\n\nContent 1\n\n# Chapter 2\n\nContent 2\n"
     assert result == expected_result
@@ -112,7 +117,12 @@ def test_epub_parser_empty_book(epub_parser):
         "ebooklib.epub": fake_epub,
         "html2text": fake_html2text
     }):
-        result = epub_parser.parse_file(Path("empty.epub"))
+        with patch.dict(sys.modules, {
+            "ebooklib": fake_ebooklib,
+            "ebooklib.epub": fake_epub,
+            "html2text": fake_html2text
+        }):
+            result = epub_parser.parse_file(Path("empty.epub"))
     assert result == ""
 
     fake_html2text.html2text.assert_not_called()
@@ -145,7 +155,12 @@ def test_epub_parser_non_document_items_ignored(epub_parser):
         "ebooklib.epub": fake_epub,
         "html2text": fake_html2text
     }):
-        result = epub_parser.parse_file(Path("test.epub"))
+        with patch.dict(sys.modules, {
+            "ebooklib": fake_ebooklib,
+            "ebooklib.epub": fake_epub,
+            "html2text": fake_html2text
+        }):
+            result = epub_parser.parse_file(Path("test.epub"))
     
     assert result == "Document content\n"
     

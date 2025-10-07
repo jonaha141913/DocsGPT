@@ -1,4 +1,5 @@
 import pytest
+
 from application.agents.tools.memory import MemoryTool
 from application.core.settings import settings
 
@@ -19,7 +20,7 @@ def memory_tool(monkeypatch) -> MemoryTool:
             # Add _id to document if not present
             if "_id" not in doc:
                 doc["_id"] = key
-            self.docs[key] = doc
+            self.docs[key] = dict(doc)
             return type("res", (), {"inserted_id": key})
 
         def update_one(self, q, u, upsert=False):

@@ -2,10 +2,9 @@
 """
 
 import io
+from application.storage.local import LocalStorage
 import pytest
 from unittest.mock import patch, MagicMock, mock_open
-
-from application.storage.local import LocalStorage
 
 
 @pytest.fixture

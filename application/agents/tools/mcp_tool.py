@@ -3,17 +3,15 @@ import base64
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from types import Optional
+from typing import Any, Dict, List
 from urllib.parse import parse_qs, urlparse
 
 from application.agents.tools.base import Tool
 from application.api.user.tasks import mcp_oauth_status_task, mcp_oauth_task
 from application.cache import get_redis_instance
-
 from application.core.mongo_db import MongoDB
-
 from application.core.settings import settings
-
 from application.security.encryption import decrypt_credentials
 from fastmcp import Client
 from fastmcp.client.auth import BearerAuth
@@ -24,7 +22,6 @@ from fastmcp.client.transports import (
 )
 from mcp.client.auth import OAuthClientProvider, TokenStorage
 from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
-
 from pydantic import AnyHttpUrl, ValidationError
 from redis import Redis
 
@@ -40,7 +37,7 @@ class MCPTool(Tool):
     Connect to remote Model Context Protocol (MCP) servers to access dynamic tools and resources.
     """
 
-    def __init__(self, config: Dict[str, Any], user_id: Optional[str] = None):
+    def __init__(self, config: Dict[str, Any], user_id: str | None = None):
         """
         Initialize the MCP Tool with configuration.
 
@@ -569,11 +566,11 @@ class DocsGPTOAuth(OAuthClientProvider):
         redirect_uri: str,
         redis_client: Redis | None = None,
         redis_prefix: str = "mcp_oauth:",
-        task_id: str = None,
+        task_id: str | None = None,
         scopes: str | list[str] | None = None,
         client_name: str = "DocsGPT-MCP",
-        user_id=None,
-        db=None,
+        user_id: str | None = None,
+        db: Any | None = None,
         additional_client_metadata: dict[str, Any] | None = None,
     ):
         """
@@ -747,7 +744,7 @@ class DBTokenStorage(TokenStorage):
             "user_id": self.user_id,
         }
 
-    async def get_tokens(self) -> OAuthToken | None:
+    async def get_tokens(self) -> Optional[OAuthToken]:
         doc = await asyncio.to_thread(self.collection.find_one, self.get_db_key())
         if not doc or "tokens" not in doc:
             return None
@@ -767,7 +764,7 @@ class DBTokenStorage(TokenStorage):
         )
         logging.info(f"Saved tokens for {self.get_base_url(self.server_url)}")
 
-    async def get_client_info(self) -> OAuthClientInformationFull | None:
+    async def get_client_info(self) -> Optional[OAuthClientInformationFull]:
         doc = await asyncio.to_thread(self.collection.find_one, self.get_db_key())
         if not doc or "client_info" not in doc:
             return None
@@ -823,7 +820,7 @@ class MCPOAuthManager:
         self.redis_prefix = redis_prefix
 
     def handle_oauth_callback(
-        self, state: str, code: str, error: Optional[str] = None
+        self, state: str, code: str, error: str | None = None
     ) -> bool:
         """
         Handle OAuth callback from provider.
@@ -852,7 +849,7 @@ class MCPOAuthManager:
             return True
         except Exception as e:
             logging.error(f"Error handling OAuth callback: {e}")
-            return False
+            raise
 
     def get_oauth_status(self, task_id: str) -> Dict[str, Any]:
         """Get current status of OAuth flow using provided task_id."""

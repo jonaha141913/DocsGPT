@@ -1,8 +1,10 @@
-import pytest
+import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import MagicMock, mock_open, patch
 
-from application.parser.file.tabular_parser import CSVParser, PandasCSVParser, ExcelParser
+import pytest
+
+from application.parser.file.tabular_parser import CSVParser, ExcelParser, PandasCSVParser
 
 
 @pytest.fixture
@@ -149,6 +151,27 @@ def test_csv_parser_import_error(csv_parser):
     with patch.dict(sys.modules, {"csv": None}):
         with pytest.raises(ValueError, match="csv module is required to read CSV files"):
             csv_parser.parse_file(Path("test.csv"))
+
+
+def test_pandas_csv_parser_import_error(pandas_csv_parser):
+    import sys
+    with patch.dict(sys.modules, {"pandas": None}):
+        with pytest.raises(ValueError, match="pandas module is required to read CSV files"):
+            pandas_csv_parser.parse_file(Path("test.csv"))
+
+
+def test_excel_parser_import_error(excel_parser):
+    import sys
+    with patch.dict(sys.modules, {"pandas": None}):
+        with pytest.raises(ValueError, match="pandas module is required to read Excel files"):
+            excel_parser.parse_file(Path("test.xlsx"))
+
+
+def test_excel_parser_import_error(excel_parser):
+    import sys
+    with patch.dict(sys.modules, {"pandas": None}):
+        with pytest.raises(ValueError, match="pandas module is required to read Excel files"):
+            excel_parser.parse_file(Path("test.xlsx"))
 
 
 def test_pandas_csv_parser_import_error(pandas_csv_parser):

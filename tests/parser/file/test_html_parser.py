@@ -1,9 +1,9 @@
+import sys
+import types
+
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-
-import sys
-import types
 
 from application.parser.file.html_parser import HTMLParser
 

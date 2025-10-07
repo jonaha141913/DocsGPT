@@ -1,7 +1,9 @@
-from unittest.mock import Mock, patch
-from typing import Any, Dict, Generator
-
 from application.llm.handlers.base import LLMHandler, LLMResponse, ToolCall
+from unittest.mock import Mock, patch
+from typing import Any
+
+Generator = type(iter([]))
+Dict = dict
 
 
 class TestToolCall:

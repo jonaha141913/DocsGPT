@@ -1,3 +1,4 @@
+import logging
 import os
 
 def create_markdown_from_directory(directory=".", output_file="combined.md"):
@@ -38,8 +39,8 @@ def create_markdown_from_directory(directory=".", output_file="combined.md"):
                     outfile.write(content)
                     outfile.write("\n\n---\n\n")  # Separator between files
 
-                except Exception as e:
-                    print(f"Error processing file {filepath}: {e}")
+                except Exception as exc:
+                    logging.error("Error processing file %s: %s", filepath, exc)
 
     print(f"Successfully created {output_file}")
 
