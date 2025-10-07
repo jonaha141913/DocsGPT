@@ -250,7 +250,7 @@ class BaseAgent(ABC):
 
         return result, call_id
 
-    def _get_truncated_tool_calls(self):
+    def _get_truncated_tool_calls(self) -> list[dict]:
         return [
             {
                 **tool_call,
@@ -268,8 +268,8 @@ class BaseAgent(ABC):
         self,
         system_prompt: str,
         query: str,
-        retrieved_data: List[Dict],
-    ) -> List[Dict]:
+        retrieved_data: list[dict],
+    ) -> list[dict]:
         docs_with_filenames = []
         for doc in retrieved_data:
             filename = doc.get("filename") or doc.get("title") or doc.get("source")
@@ -319,14 +319,14 @@ class BaseAgent(ABC):
         retriever: BaseRetriever,
         query: str,
         log_context: Optional[LogContext] = None,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         retrieved_data = retriever.search(query)
         if log_context:
             data = build_stack_data(retriever, exclude_attributes=["llm"])
             log_context.stacks.append({"component": "retriever", "data": data})
         return retrieved_data
 
-    def _llm_gen(self, messages: List[Dict], log_context: Optional[LogContext] = None):
+    def _llm_gen(self, messages: list[dict], log_context: Optional[LogContext] = None):
         gen_kwargs = {"model": self.gpt_model, "messages": messages}
 
         if (
@@ -360,10 +360,10 @@ class BaseAgent(ABC):
     def _llm_handler(
         self,
         resp,
-        tools_dict: Dict,
-        messages: List[Dict],
+        tools_dict: dict,
+        messages: list[dict],
         log_context: Optional[LogContext] = None,
-        attachments: Optional[List[Dict]] = None,
+        attachments: Optional[list[dict]] = None,
     ):
         resp = self.llm_handler.process_message_flow(
             self, resp, tools_dict, messages, attachments, True
@@ -373,7 +373,7 @@ class BaseAgent(ABC):
             log_context.stacks.append({"component": "llm_handler", "data": data})
         return resp
 
-    def _handle_response(self, response, tools_dict, messages, log_context):
+    def _handle_response(self, response, tools_dict: dict, messages: list[dict], log_context):
         is_structured_output = (
             self.json_schema is not None
             and hasattr(self.llm, "_supports_structured_output")

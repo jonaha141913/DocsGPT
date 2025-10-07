@@ -1,5 +1,6 @@
-from application.agents.tools.base import Tool
 from duckduckgo_search import DDGS
+
+from application.agents.tools.base import Tool
 
 
 class DuckDuckGoSearchTool(Tool):
@@ -27,7 +28,7 @@ class DuckDuckGoSearchTool(Tool):
         query,
         max_results=5,
     ):
-        print(f"Performing DuckDuckGo web search for: {query}")
+        logger.info(f"Performing DuckDuckGo web search for: {query}")
 
         try:
             results = DDGS().text(
@@ -41,6 +42,7 @@ class DuckDuckGoSearchTool(Tool):
                 "message": "Web search completed successfully.",
             }
         except Exception as e:
+            logger.error(f"Web search failed: {str(e)}")
             return {
                 "status_code": 500,
                 "message": f"Web search failed: {str(e)}",
@@ -51,7 +53,7 @@ class DuckDuckGoSearchTool(Tool):
         query,
         max_results=5,
     ):
-        print(f"Performing DuckDuckGo image search for: {query}")
+        logger.info(f"Performing DuckDuckGo image search for: {query}")
 
         try:
             results = DDGS().images(
@@ -65,6 +67,7 @@ class DuckDuckGoSearchTool(Tool):
                 "message": "Image search completed successfully.",
             }
         except Exception as e:
+            logger.error(f"Image search failed: {str(e)}")
             return {
                 "status_code": 500,
                 "message": f"Image search failed: {str(e)}",

@@ -5,9 +5,10 @@ from google import genai
 from google.genai import types
 
 from application.core.settings import settings
-
 from application.llm.base import BaseLLM
 from application.storage.storage_creator import StorageCreator
+
+logger = logging.getLogger(__name__)
 
 
 class GoogleLLM(BaseLLM):
@@ -77,12 +78,23 @@ class GoogleLLM(BaseLLM):
             if mime_type in self.get_supported_attachment_types():
                 try:
                     file_uri = self._upload_file_to_google(attachment)
-                    logging.info(
+                    logger.info(
                         f"GoogleLLM: Successfully uploaded file, got URI: {file_uri}"
                     )
                     files.append({"file_uri": file_uri, "mime_type": mime_type})
+                except FileNotFoundError as e:
+                    logger.error(
+                        f"GoogleLLM: Error uploading file: {e}", exc_info=True
+                    )
+                    if "content" in attachment:
+                        prepared_messages[user_message_index]["content"].append(
+                            {
+                                "type": "text",
+                                "text": f"[File could not be processed: {attachment.get('path', 'unknown')}]",
+                            }
+                        )
                 except Exception as e:
-                    logging.error(
+                    logger.error(
                         f"GoogleLLM: Error uploading file: {e}", exc_info=True
                     )
                     if "content" in attachment:
@@ -94,7 +106,7 @@ class GoogleLLM(BaseLLM):
                         )
 
         if files:
-            logging.info(f"GoogleLLM: Adding {len(files)} files to message")
+            logger.info(f"GoogleLLM: Adding {len(files)} files to message")
             prepared_messages[user_message_index]["content"].append({"files": files})
 
         return prepared_messages
@@ -138,8 +150,11 @@ class GoogleLLM(BaseLLM):
                 )
 
             return file_uri
+        except FileNotFoundError as e:
+            logger.error(f"Error uploading file to Google AI: {e}", exc_info=True)
+            raise
         except Exception as e:
-            logging.error(f"Error uploading file to Google AI: {e}", exc_info=True)
+            logger.error(f"Error uploading file to Google AI: {e}", exc_info=True)
             raise
 
     def _clean_messages_google(self, messages):
@@ -363,7 +378,7 @@ class GoogleLLM(BaseLLM):
             if has_attachments:
                 break
 
-        logging.info(
+        logger.info(
             f"GoogleLLM: Starting stream generation. Model: {model}, Messages: {json.dumps(messages, default=str)}, Has attachments: {has_attachments}"
         )
 

@@ -254,7 +254,7 @@ class LLMHandler(ABC):
         return updated_messages
 
     def handle_non_streaming(
-        self, agent, response: Any, tools_dict: Dict, messages: List[Dict]
+        self, agent, response: object, tools_dict: dict, messages: list[dict]
     ) -> Generator:
         """
         Handle non-streaming response flow.
@@ -289,7 +289,7 @@ class LLMHandler(ABC):
         return parsed.content
 
     def handle_streaming(
-        self, agent, response: Any, tools_dict: Dict, messages: List[Dict]
+        self, agent, response: object, tools_dict: dict, messages: list[dict]
     ) -> Generator:
         """
         Handle streaming response flow.
