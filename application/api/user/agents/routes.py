@@ -2,6 +2,7 @@
 
 import datetime
 import json
+import logging
 import uuid
 
 from bson.dbref import DBRef
@@ -24,6 +25,8 @@ from application.utils import (
     generate_image_url,
     validate_required_fields,
 )
+
+logger = logging.getLogger(__name__)
 
 
 agents_ns = Namespace("agents", description="Agent management operations", path="/api")
@@ -89,7 +92,7 @@ class GetAgent(Resource):
             }
             return make_response(jsonify(data), 200)
         except Exception as e:
-            current_app.logger.error(f"Agent fetch error: {e}", exc_info=True)
+            logger.error(f"Agent fetch error: {e}", exc_info=True)
             return {"success": False}, 400
 
 
@@ -111,7 +114,7 @@ class GetAgents(Resource):
                     "name": agent["name"],
                     "description": agent.get("description", ""),
                     "image": (
-                        generate_image_url(agent["image"]) if agent.get("image") else ""
+                        generate_image_url(agent["image"]!s) if agent.get("image") else ""
                     ),
                     "source": (
                         str(source_doc["_id"])
@@ -147,7 +150,7 @@ class GetAgents(Resource):
                     "updated_at": agent.get("updatedAt", ""),
                     "last_used_at": agent.get("lastUsedAt", ""),
                     "key": (
-                        f"{agent['key'][:4]}...{agent['key'][-4:]}"
+                        f"{agent['key']!s[:4]}...{agent['key']!s[-4:]}"
                         if "key" in agent
                         else ""
                     ),
@@ -160,7 +163,7 @@ class GetAgents(Resource):
                 if "source" in agent or "retriever" in agent
             ]
         except Exception as err:
-            current_app.logger.error(f"Error retrieving agents: {err}", exc_info=True)
+            logger.error(f"Error retrieving agents: {err}", exc_info=True)
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(list_agents), 200)
 
@@ -227,7 +230,7 @@ class CreateAgent(Resource):
                     data["json_schema"] = json.loads(data["json_schema"])
                 except json.JSONDecodeError:
                     data["json_schema"] = None
-        print(f"Received data: {data}")
+        logger.debug(f"Received data: {data}")
 
         # Validate JSON schema if provided
 
@@ -258,7 +261,7 @@ class CreateAgent(Resource):
                         ),
                         400,
                     )
-            except Exception as e:
+            except (json.JSONDecodeError, TypeError, ValueError) as e:
                 return make_response(
                     jsonify(
                         {"success": False, "message": f"Invalid JSON schema: {str(e)}"}
@@ -360,7 +363,7 @@ class CreateAgent(Resource):
             resp = agents_collection.insert_one(new_agent)
             new_id = str(resp.inserted_id)
         except Exception as err:
-            current_app.logger.error(f"Error creating agent: {err}", exc_info=True)
+            logger.error(f"Error creating agent: {err}", exc_info=True)
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": new_id, "key": key}), 201)
 
@@ -438,7 +441,7 @@ class UpdateAgent(Resource):
                                 400,
                             )
         except Exception as err:
-            current_app.logger.error(
+            logger.error(
                 f"Error parsing request data: {err}", exc_info=True
             )
             return make_response(
@@ -447,7 +450,7 @@ class UpdateAgent(Resource):
         try:
             existing_agent = agents_collection.find_one({"_id": oid, "user": user})
         except Exception as err:
-            current_app.logger.error(
+            logger.error(
                 f"Error finding agent {agent_id}: {err}", exc_info=True
             )
             return make_response(
@@ -465,7 +468,7 @@ class UpdateAgent(Resource):
             request, existing_agent.get("image", ""), user, storage
         )
         if error:
-            current_app.logger.error(
+            logger.error(
                 f"Image upload error for agent {agent_id}: {error}"
             )
             return make_response(
@@ -702,7 +705,7 @@ class UpdateAgent(Resource):
                     200,
                 )
         except Exception as err:
-            current_app.logger.error(
+            logger.error(
                 f"Error updating agent {agent_id}: {err}", exc_info=True
             )
             return make_response(
@@ -742,7 +745,7 @@ class DeleteAgent(Resource):
                 )
             deleted_id = str(deleted_agent["_id"])
         except Exception as err:
-            current_app.logger.error(f"Error deleting agent: {err}", exc_info=True)
+            logger.error(f"Error deleting agent: {err}", exc_info=True)
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": deleted_id}), 200)
 
@@ -789,7 +792,7 @@ class PinnedAgents(Resource):
                         generate_image_url(agent["image"]) if agent.get("image") else ""
                     ),
                     "source": (
-                        str(db.dereference(agent["source"])["_id"])
+                        str(db.dereference(agent["source"])["_id"]!s)
                         if "source" in agent
                         and agent["source"]
                         and isinstance(agent["source"], DBRef)
@@ -817,7 +820,7 @@ class PinnedAgents(Resource):
                 if "source" in agent or "retriever" in agent
             ]
         except Exception as err:
-            current_app.logger.error(f"Error retrieving pinned agents: {err}")
+            logger.error(f"Error retrieving pinned agents: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(list_pinned_agents), 200)
 
@@ -839,7 +842,7 @@ class GetTemplateAgents(Resource):
             ]
             return make_response(jsonify(template_agents), 200)
         except Exception as e:
-            current_app.logger.error(f"Template agents fetch error: {e}", exc_info=True)
+            logger.error(f"Template agents fetch error: {e}", exc_info=True)
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -882,7 +885,7 @@ class AdoptAgent(Resource):
                 jsonify({"success": True, "agent": response_agent}), 200
             )
         except Exception as e:
-            current_app.logger.error(f"Agent adopt error: {e}", exc_info=True)
+            logger.error(f"Agent adopt error: {e}", exc_info=True)
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -922,7 +925,7 @@ class PinAgent(Resource):
                 )
                 action = "pinned"
         except Exception as err:
-            current_app.logger.error(f"Error pinning/unpinning agent: {err}")
+            logger.error(f"Error pinning/unpinning agent: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Server error"}), 500
             )
@@ -968,7 +971,7 @@ class RemoveSharedAgent(Resource):
 
             return make_response(jsonify({"success": True, "action": "removed"}), 200)
         except Exception as err:
-            current_app.logger.error(f"Error removing shared agent: {err}")
+            logger.error(f"Error removing shared agent: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Server error"}), 500
             )

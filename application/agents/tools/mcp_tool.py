@@ -3,8 +3,8 @@ import base64
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
+from typing import Any, Dict, Optional
 
 from application.agents.tools.base import Tool
 from application.api.user.tasks import mcp_oauth_status_task, mcp_oauth_task
@@ -27,6 +27,8 @@ from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAu
 
 from pydantic import AnyHttpUrl, ValidationError
 from redis import Redis
+
+logger = logging.getLogger(__name__)
 
 mongo = MongoDB.get_client()
 db = mongo[settings.MONGO_DB_NAME]
@@ -212,7 +214,7 @@ class MCPTool(Tool):
     async def _execute_with_client(self, operation: str, *args, **kwargs):
         """Execute operation with FastMCP client."""
         if not self._client:
-            raise Exception("FastMCP client not initialized")
+            raise RuntimeError("FastMCP client not initialized")
         async with self._client:
             if operation == "ping":
                 return await self._client.ping()
@@ -640,13 +642,13 @@ class DocsGPTOAuth(OAuthClientProvider):
             else:
                 raise ValueError("No state in auth URL")
             return authorization_url, state
-        except Exception as e:
-            raise Exception(f"Failed to process auth URL: {e}")
+        except ValueError as e:
+            raise ValueError(f"Failed to process auth URL: {e}")
 
     async def redirect_handler(self, authorization_url: str) -> None:
         """Store auth URL and state in Redis for frontend to use."""
         auth_url, state = self._process_auth_url(authorization_url)
-        logging.info(
+        logger.info(
             "[DocsGPTOAuth] Processed auth_url: %s, state: %s", auth_url, state
         )
         self.auth_url = auth_url
@@ -655,7 +657,7 @@ class DocsGPTOAuth(OAuthClientProvider):
         if self.redis_client and self.extracted_state:
             key = f"{self.redis_prefix}auth_url:{self.extracted_state}"
             self.redis_client.setex(key, 600, auth_url)
-            logging.info("[DocsGPTOAuth] Stored auth_url in Redis: %s", key)
+            logger.info("[DocsGPTOAuth] Stored auth_url in Redis: %s", key)
 
             if self.task_id:
                 status_key = f"mcp_oauth_status:{self.task_id}"
@@ -672,7 +674,7 @@ class DocsGPTOAuth(OAuthClientProvider):
     async def callback_handler(self) -> tuple[str, str | None]:
         """Wait for auth code from Redis using the state value."""
         if not self.redis_client or not self.extracted_state:
-            raise Exception("Redis client or state not configured for OAuth")
+            raise RuntimeError("Redis client or state not configured for OAuth")
         poll_interval = 1
         max_wait_time = 300
         code_key = f"{self.redis_prefix}code:{self.extracted_state}"
@@ -722,11 +724,11 @@ class DocsGPTOAuth(OAuthClientProvider):
                 self.redis_client.delete(
                     f"{self.redis_prefix}state:{self.extracted_state}"
                 )
-                raise Exception(f"OAuth error: {error_msg}")
+                raise RuntimeError(f"OAuth error: {error_msg}")
             await asyncio.sleep(poll_interval)
         self.redis_client.delete(f"{self.redis_prefix}auth_url:{self.extracted_state}")
         self.redis_client.delete(f"{self.redis_prefix}state:{self.extracted_state}")
-        raise Exception("OAuth callback timeout: no code received within 5 minutes")
+        raise RuntimeError("OAuth callback timeout: no code received within 5 minutes")
 
 
 class DBTokenStorage(TokenStorage):
@@ -759,23 +761,27 @@ class DBTokenStorage(TokenStorage):
             return None
 
     async def set_tokens(self, tokens: OAuthToken) -> None:
-        await asyncio.to_thread(
-            self.collection.update_one,
-            self.get_db_key(),
-            {"$set": {"tokens": tokens.model_dump()}},
-            True,
-        )
-        logging.info(f"Saved tokens for {self.get_base_url(self.server_url)}")
+        try:
+            await asyncio.to_thread(
+                self.collection.update_one,
+                self.get_db_key(),
+                {"$set": {"tokens": tokens.model_dump()}},
+                True,
+            )
+            logger.info(f"Saved tokens for {self.get_base_url(self.server_url)}")
+        except Exception as e:
+            logger.error(f"Failed to set tokens: {e}")
+            raise
 
     async def get_client_info(self) -> OAuthClientInformationFull | None:
-        doc = await asyncio.to_thread(self.collection.find_one, self.get_db_key())
-        if not doc or "client_info" not in doc:
-            return None
         try:
+            doc = await asyncio.to_thread(self.collection.find_one, self.get_db_key())
+            if not doc or "client_info" not in doc:
+                return None
             client_info = OAuthClientInformationFull.model_validate(doc["client_info"])
             tokens = await self.get_tokens()
             if tokens is None:
-                logging.debug(
+                logger.debug(
                     "No tokens found, clearing client info to force fresh registration."
                 )
                 await asyncio.to_thread(
@@ -786,7 +792,10 @@ class DBTokenStorage(TokenStorage):
                 return None
             return client_info
         except ValidationError as e:
-            logging.error(f"Could not load client info: {e}")
+            logger.error(f"Could not load client info: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Database error in get_client_info: {e}")
             return None
 
     def _serialize_client_info(self, info: dict) -> dict:
@@ -810,9 +819,13 @@ class DBTokenStorage(TokenStorage):
 
     @classmethod
     async def clear_all(cls, db_client) -> None:
-        collection = db_client["connector_sessions"]
-        await asyncio.to_thread(collection.delete_many, {})
-        logging.info("Cleared all OAuth client cache data.")
+        try:
+            collection = db_client["connector_sessions"]
+            await asyncio.to_thread(collection.delete_many, {})
+            logger.info("Cleared all OAuth client cache data.")
+        except Exception as e:
+            logger.error(f"Failed to clear all OAuth client cache data: {e}")
+            raise
 
 
 class MCPOAuthManager:
@@ -838,11 +851,11 @@ class MCPOAuthManager:
         """
         try:
             if not self.redis_client or not state:
-                raise Exception("Redis client or state not provided")
+                raise RuntimeError("Redis client or state not provided")
             if error:
                 error_key = f"{self.redis_prefix}error:{state}"
                 self.redis_client.setex(error_key, 300, error)
-                raise Exception(f"OAuth error received: {error}")
+                raise RuntimeError(f"OAuth error received: {error}")
             code_key = f"{self.redis_prefix}code:{state}"
             self.redis_client.setex(code_key, 300, code)
 
@@ -850,8 +863,11 @@ class MCPOAuthManager:
             self.redis_client.setex(state_key, 300, "completed")
 
             return True
+        except RuntimeError as e:
+            logger.error(f"Error handling OAuth callback: {e}")
+            return False
         except Exception as e:
-            logging.error(f"Error handling OAuth callback: {e}")
+            logger.error(f"Unexpected error handling OAuth callback: {e}")
             return False
 
     def get_oauth_status(self, task_id: str) -> Dict[str, Any]:

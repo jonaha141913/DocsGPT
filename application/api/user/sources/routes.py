@@ -328,7 +328,7 @@ class DirectoryStructure(Resource):
                 if isinstance(remote_data, str) and remote_data:
                     remote_data_obj = json.loads(remote_data)
                     provider = remote_data_obj.get("provider")
-            except Exception as e:
+            except json.JSONDecodeError as e:
                 current_app.logger.warning(
                     f"Failed to parse remote_data for doc {doc_id}: {e}"
                 )

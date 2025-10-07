@@ -1,7 +1,6 @@
 """Tool management MCP server integration."""
 
 import json
-from email.quoprimime import unquote
 
 from bson.objectid import ObjectId
 from flask import current_app, jsonify, make_response, redirect, request
@@ -65,6 +64,14 @@ class TestMCPServerConfig(Resource):
             result = mcp_tool.test_connection()
 
             return make_response(jsonify(result), 200)
+        except ValueError as e:
+            current_app.logger.error(f"Error testing MCP server: {e}", exc_info=True)
+            return make_response(
+                jsonify(
+                    {"success": False, "error": f"Connection test failed: {str(e)}"}
+                ),
+                500,
+            )
         except Exception as e:
             current_app.logger.error(f"Error testing MCP server: {e}", exc_info=True)
             return make_response(
@@ -159,7 +166,7 @@ class MCPServerSave(Resource):
                 mcp_tool.discover_tools()
                 actions_metadata = mcp_tool.get_actions_metadata()
             else:
-                raise Exception(
+                raise ValueError(
                     "No valid credentials provided for the selected authentication type"
                 )
             storage_config = config.copy()
@@ -230,6 +237,14 @@ class MCPServerSave(Resource):
                     "tools_count": len(transformed_actions),
                 }
             return make_response(jsonify(response_data), 200)
+        except ValueError as e:
+            current_app.logger.error(f"Error saving MCP server: {e}", exc_info=True)
+            return make_response(
+                jsonify(
+                    {"success": False, "error": f"Failed to save MCP server: {str(e)}"}
+                ),
+                500,
+            )
         except Exception as e:
             current_app.logger.error(f"Error saving MCP server: {e}", exc_info=True)
             return make_response(

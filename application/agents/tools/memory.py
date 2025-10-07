@@ -1,6 +1,5 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 import re
 import uuid
 
@@ -218,7 +217,7 @@ class MemoryTool(Tool):
     # -----------------------------
     # Path validation
     # -----------------------------
-    def _validate_path(self, path: str) -> Optional[str]:
+    def _validate_path(self, path: str) -> str | None:
         """Validate and normalize path.
 
         Args:
@@ -258,7 +257,7 @@ class MemoryTool(Tool):
                 normalized = normalized + "/"
 
             return normalized
-        except Exception:
+        except (OSError, ValueError):
             return None
 
     # -----------------------------
@@ -349,7 +348,7 @@ class MemoryTool(Tool):
             {
                 "$set": {
                     "content": file_text,
-                    "updated_at": datetime.now()
+                    "updated_at": datetime.now(tz=timezone.utc)
                 }
             },
             upsert=True
@@ -386,7 +385,7 @@ class MemoryTool(Tool):
             {
                 "$set": {
                     "content": updated_content,
-                    "updated_at": datetime.now()
+                    "updated_at": datetime.now(tz=timezone.utc)
                 }
             }
         )
@@ -423,7 +422,7 @@ class MemoryTool(Tool):
             {
                 "$set": {
                     "content": updated_content,
-                    "updated_at": datetime.now()
+                    "updated_at": datetime.now(tz=timezone.utc)
                 }
             }
         )
@@ -508,7 +507,7 @@ class MemoryTool(Tool):
 
                 self.collection.update_one(
                     {"_id": doc["_id"]},
-                    {"$set": {"path": new_file_path, "updated_at": datetime.now()}}
+                    {"$set": {"path": new_file_path, "updated_at": datetime.now(tz=timezone.utc)}}
                 )
 
             return f"Renamed directory: {validated_old} -> {validated_new} ({len(docs)} files)"
@@ -540,7 +539,7 @@ class MemoryTool(Tool):
             "tool_id": self.tool_id,
             "path": validated_new,
             "content": doc.get("content", ""),
-            "updated_at": datetime.now()
+            "updated_at": datetime.now(tz=timezone.utc)
         })
 
         return f"Renamed: {validated_old} -> {validated_new}"

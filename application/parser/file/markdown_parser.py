@@ -5,9 +5,34 @@ Contains parser for md files.
 """
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import tiktoken
+
+from application.parser.file.base_parser import BaseParser
+from typing import Any, Optional, Tuple, Union, cast
+
+# Note: List, Dict, and other generic types are now imported from typing for compatibility
+# or replaced with built-in types in function signatures below. 
+# However, to strictly follow the import block fix for sorting:
+# Standard library imports (re, pathlib) -> Third party (tiktoken) -> Local (application)
+# The typing imports should be grouped with standard library or kept separate depending on tool config.
+# Based on the error, the main issue is sorting and deprecated types.
+# Let's restructure imports to be sorted and remove deprecated types from import list if possible,
+# but since we need to fix the type annotations in the code, we will keep the imports minimal
+# and update the code to use built-in types.
+# Actually, the error says: "Standard library imports (re, pathlib, typing) should be separated from third-party imports (tiktoken) and local imports"
+# So: re, pathlib, typing (stdlib) -> tiktoken (third-party) -> application (local)
+# And within typing, we should remove deprecated ones if we are replacing them in code.
+# But the import block itself needs to be sorted.
+# Let's fix the import block sorting first.
+
+# Re-ordered imports:
+import re
+from pathlib import Path
+from typing import Any, Optional, Tuple, Union, cast
+
+import tiktoken
+
 from application.parser.file.base_parser import BaseParser
 
 
@@ -35,7 +60,7 @@ class MarkdownParser(BaseParser):
         self._max_tokens = max_tokens
         # self._remove_tables = remove_tables
 
-    def tups_chunk_append(self, tups: List[Tuple[Optional[str], str]], current_header: Optional[str],
+    def tups_chunk_append(self, tups: list[tuple[Optional[str], str]], current_header: Optional[str],
                           current_text: str):
         """Append to tups chunk."""
         num_tokens = len(tiktoken.get_encoding("cl100k_base").encode(current_text))
@@ -47,7 +72,7 @@ class MarkdownParser(BaseParser):
             tups.append((current_header, current_text))
         return tups
 
-    def markdown_to_tups(self, markdown_text: str) -> List[Tuple[Optional[str], str]]:
+    def markdown_to_tups(self, markdown_text: str) -> list[tuple[Optional[str], str]]:
         """Convert a markdown file to a dictionary.
 
         The keys are the headers and the values are the text under each header.
@@ -63,7 +88,7 @@ class MarkdownParser(BaseParser):
             header_match = re.match(r"^#+\s", line)
             if header_match:
                 if current_header is not None:
-                    if current_text == "" or None:
+                    if not current_text:
                         continue
                     markdown_tups = self.tups_chunk_append(markdown_tups, current_header, current_text)
 
@@ -117,7 +142,7 @@ class MarkdownParser(BaseParser):
 
     def parse_tups(
             self, filepath: Path, errors: str = "ignore"
-    ) -> List[Tuple[Optional[str], str]]:
+    ) -> list[tuple[Optional[str], str]]:
         """Parse file into tuples."""
         with open(filepath, "r") as f:
             content = f.read()
@@ -132,7 +157,7 @@ class MarkdownParser(BaseParser):
 
     def parse_file(
             self, filepath: Path, errors: str = "ignore"
-    ) -> Union[str, List[str]]:
+    ) -> str | list[str]:
         """Parse file into string."""
         tups = self.parse_tups(filepath, errors=errors)
         results = []
