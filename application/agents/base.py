@@ -268,8 +268,8 @@ class BaseAgent(ABC):
         self,
         system_prompt: str,
         query: str,
-        retrieved_data: List[Dict],
-    ) -> List[Dict]:
+        retrieved_data: list[dict],
+    ) -> list[dict]:
         docs_with_filenames = []
         for doc in retrieved_data:
             filename = doc.get("filename") or doc.get("title") or doc.get("source")
@@ -326,7 +326,7 @@ class BaseAgent(ABC):
             log_context.stacks.append({"component": "retriever", "data": data})
         return retrieved_data
 
-    def _llm_gen(self, messages: List[Dict], log_context: Optional[LogContext] = None):
+    def _llm_gen(self, messages: list[dict], log_context: LogContext | None = None):
         gen_kwargs = {"model": self.gpt_model, "messages": messages}
 
         if (
@@ -360,10 +360,10 @@ class BaseAgent(ABC):
     def _llm_handler(
         self,
         resp,
-        tools_dict: Dict,
-        messages: List[Dict],
-        log_context: Optional[LogContext] = None,
-        attachments: Optional[List[Dict]] = None,
+        tools_dict: dict,
+        messages: list[dict],
+        log_context: LogContext | None = None,
+        attachments: list[dict] | None = None,
     ):
         resp = self.llm_handler.process_message_flow(
             self, resp, tools_dict, messages, attachments, True

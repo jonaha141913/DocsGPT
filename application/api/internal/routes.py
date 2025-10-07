@@ -1,10 +1,12 @@
-import os
 import datetime
 import json
+import logging
+import os
+
+from bson.objectid import ObjectId
 from flask import Blueprint, request, send_from_directory
 from werkzeug.utils import secure_filename
-from bson.objectid import ObjectId
-import logging
+
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
 from application.storage.storage_creator import StorageCreator
@@ -55,7 +57,7 @@ def upload_index_files():
     if directory_structure:
         try:
             directory_structure = json.loads(directory_structure)
-        except Exception:
+        except json.JSONDecodeError:
             logger.error("Error parsing directory_structure")
             directory_structure = {}
     else:
@@ -94,7 +96,7 @@ def upload_index_files():
                     "user": user,
                     "name": job_name,
                     "language": job_name,
-                    "date": datetime.datetime.now(),
+                    "date": datetime.datetime.now(datetime.timezone.utc),
                     "model": settings.EMBEDDINGS_NAME,
                     "type": type,
                     "tokens": tokens,
@@ -113,7 +115,7 @@ def upload_index_files():
                 "user": user,
                 "name": job_name,
                 "language": job_name,
-                "date": datetime.datetime.now(),
+                "date": datetime.datetime.now(datetime.timezone.utc),
                 "model": settings.EMBEDDINGS_NAME,
                 "type": type,
                 "tokens": tokens,

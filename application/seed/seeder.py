@@ -1,7 +1,7 @@
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Union
+from typing import Any
 
 import yaml
 from bson import ObjectId
@@ -14,12 +14,12 @@ from application.agents.tools.tool_manager import ToolManager
 from application.api.user.tasks import ingest_remote
 
 load_dotenv()
-tool_config = {}
+tool_config: dict[str, Any] = {}
 tool_manager = ToolManager(config=tool_config)
 
 
 class DatabaseSeeder:
-    def __init__(self, db):
+    def __init__(self, db: Any) -> None:
         self.db = db
         self.tools_collection = self.db["user_tools"]
         self.sources_collection = self.db["sources"]
@@ -28,7 +28,7 @@ class DatabaseSeeder:
         self.system_user_id = "system"
         self.logger = logging.getLogger(__name__)
 
-    def seed_initial_data(self, config_path: str = None, force=False):
+    def seed_initial_data(self, config_path: str | None = None, force: bool = False) -> None:
         """Main entry point for seeding all initial data"""
         if not force and self._is_already_seeded():
             self.logger.info("Database already seeded. Use force=True to reseed.")
@@ -45,7 +45,7 @@ class DatabaseSeeder:
             self.logger.error(f"Failed to load seeding config: {str(e)}")
             raise
 
-    def _seed_from_config(self, config: Dict):
+    def _seed_from_config(self, config: dict) -> None:
         """Seed all data from configuration"""
         self.logger.info("🌱 Starting seeding...")
 
@@ -123,7 +123,7 @@ class DatabaseSeeder:
                 continue
         self.logger.info("✅ Database seeding completed")
 
-    def _handle_source(self, agent_config: Dict) -> Union[ObjectId, None, bool]:
+    def _handle_source(self, agent_config: dict) -> ObjectId | None | bool:
         """Handle source ingestion and return source ID"""
         if not agent_config.get("source"):
             self.logger.info(
@@ -164,9 +164,9 @@ class DatabaseSeeder:
             self.logger.error(f"Failed to ingest source: {str(e)}")
             return False
 
-    def _handle_tools(self, agent_config: Dict) -> List[ObjectId]:
+    def _handle_tools(self, agent_config: dict) -> list[ObjectId]:
         """Handle tool creation and return list of tool IDs"""
-        tool_ids = []
+        tool_ids: list[ObjectId] = []
         if not agent_config.get("tools"):
             return tool_ids
         for tool_config in agent_config["tools"]:
@@ -204,7 +204,7 @@ class DatabaseSeeder:
                 continue
         return tool_ids
 
-    def _handle_prompt(self, agent_config: Dict) -> Optional[str]:
+    def _handle_prompt(self, agent_config: dict) -> str | None:
         """Handle prompt creation and return prompt ID"""
         if not agent_config.get("prompt"):
             return None
@@ -248,9 +248,9 @@ class DatabaseSeeder:
             self.logger.error(f"Failed to process prompt {prompt_name}: {str(e)}")
             return None
 
-    def _process_config(self, config: Dict) -> Dict:
+    def _process_config(self, config: dict) -> dict:
         """Process config values to replace environment variables"""
-        processed = {}
+        processed: dict[str, Any] = {}
         for key, value in config.items():
             if (
                 isinstance(value, str)
@@ -268,7 +268,8 @@ class DatabaseSeeder:
         return self.agents_collection.count_documents({"user": self.system_user_id}) > 0
 
     @classmethod
-    def initialize_from_env(cls, worker=None):
+    @classmethod
+    def initialize_from_env(cls, worker: Any | None = None) -> "DatabaseSeeder":
         """Factory method to create seeder from environment"""
         mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
         db_name = os.getenv("MONGO_DB_NAME", "docsgpt")
