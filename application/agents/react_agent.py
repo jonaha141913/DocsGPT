@@ -1,6 +1,7 @@
-import os
-from typing import Dict, Generator, List, Any
 import logging
+import os
+from collections.abc import Generator
+from typing import Any
 
 from application.agents.base import BaseAgent
 from application.logging import build_stack_data, LogContext
@@ -98,7 +99,7 @@ class ReActAgent(BaseAgent):
                 logger.debug(
                     f"Response type {type(resp)} could not be iterated as a stream. It might be a non-streaming object not handled by specific checks."
                 )
-            except Exception as e:
+            except Exception:
                 logger.error(
                     f"Error processing potential stream chunk: {e}, chunk was: {getattr(chunk, '__dict__', chunk) if chunk is not None else 'N/A'}"
                 )
@@ -252,7 +253,7 @@ class ReActAgent(BaseAgent):
                 yield content_piece
 
     def _create_final_answer(
-        self, query: str, observations: List[str], log_context: LogContext = None
+        self, query: str, observations: list[str], log_context: LogContext | None = None
     ) -> Generator[str, None, None]:
         observation_string = "\n".join(observations)
         max_obs_len = 10000

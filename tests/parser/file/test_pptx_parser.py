@@ -1,6 +1,7 @@
-import pytest
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 from application.parser.file.pptx_parser import PPTXParser
 
@@ -35,8 +36,8 @@ def test_pptx_parser_concat_true():
     fake_pptx = types.ModuleType("pptx")
     fake_pptx.Presentation = FakePres
     parser = PPTXParser()
-    with patch.dict(sys.modules, {"pptx": fake_pptx}):
-        result = parser.parse_file(Path("deck.pptx"))
+    with patch.dict(sys.modules, {"pptx": fake_pptx}), parser.parse_file(Path("deck.pptx")) as result:
+        pass
     assert result == "Hello World\nSlide2"
 
 
@@ -49,8 +50,8 @@ def test_pptx_parser_list_mode():
     fake_pptx.Presentation = FakePres
     parser = PPTXParser()
     parser._concat_slides = False
-    with patch.dict(sys.modules, {"pptx": fake_pptx}):
-        result = parser.parse_file(Path("deck.pptx"))
+    with patch.dict(sys.modules, {"pptx": fake_pptx}), parser.parse_file(Path("deck.pptx")) as result:
+        pass
     assert result == ["A B", "C"]
 
 

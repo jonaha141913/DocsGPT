@@ -3,10 +3,9 @@
 Contains parsers for tabular data files.
 
 """
-from pathlib import Path
-from typing import Any, Dict, List, Union
-
 from application.parser.file.base_parser import BaseParser
+from pathlib import Path
+from typing import Any, Union
 
 
 class CSVParser(BaseParser):
@@ -88,12 +87,14 @@ class PandasCSVParser(BaseParser):
             concat_rows: bool = True,
             col_joiner: str = ", ",
             row_joiner: str = "\n",
-            pandas_config: dict = {},
+            pandas_config: dict | None = None,
             header_period: int = 20,
             header_prefix: str = "HEADERS: ",
             **kwargs: Any
     ) -> None:
         """Init params."""
+        if pandas_config is None:
+            pandas_config = {}
         super().__init__(*args, **kwargs)
         self._concat_rows = concat_rows
         self._col_joiner = col_joiner
@@ -174,12 +175,14 @@ class ExcelParser(BaseParser):
             concat_rows: bool = True,
             col_joiner: str = ", ",
             row_joiner: str = "\n",
-            pandas_config: dict = {},
+            pandas_config: dict | None = None,
             header_period: int = 20,
             header_prefix: str = "HEADERS: ",
             **kwargs: Any
     ) -> None:
         """Init params."""
+        if pandas_config is None:
+            pandas_config = {}
         super().__init__(*args, **kwargs)
         self._concat_rows = concat_rows
         self._col_joiner = col_joiner

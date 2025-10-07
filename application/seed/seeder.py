@@ -248,7 +248,7 @@ class DatabaseSeeder:
             self.logger.error(f"Failed to process prompt {prompt_name}: {str(e)}")
             return None
 
-    def _process_config(self, config: Dict) -> Dict:
+    def _process_config(self, config: dict) -> dict:
         """Process config values to replace environment variables"""
         processed = {}
         for key, value in config.items():
@@ -268,7 +268,7 @@ class DatabaseSeeder:
         return self.agents_collection.count_documents({"user": self.system_user_id}) > 0
 
     @classmethod
-    def initialize_from_env(cls, worker=None):
+    def initialize_from_env(cls, worker: Any | None = None):
         """Factory method to create seeder from environment"""
         mongo_uri = os.getenv("MONGO_URI", "mongodb://localhost:27017")
         db_name = os.getenv("MONGO_DB_NAME", "docsgpt")

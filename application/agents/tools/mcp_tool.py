@@ -3,17 +3,14 @@ import base64
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
 
 from application.agents.tools.base import Tool
 from application.api.user.tasks import mcp_oauth_status_task, mcp_oauth_task
 from application.cache import get_redis_instance
-
 from application.core.mongo_db import MongoDB
-
 from application.core.settings import settings
-
 from application.security.encryption import decrypt_credentials
 from fastmcp import Client
 from fastmcp.client.auth import BearerAuth
@@ -24,7 +21,6 @@ from fastmcp.client.transports import (
 )
 from mcp.client.auth import OAuthClientProvider, TokenStorage
 from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
-
 from pydantic import AnyHttpUrl, ValidationError
 from redis import Redis
 
@@ -261,10 +257,10 @@ class MCPTool(Tool):
                 finally:
                     loop.close()
         except Exception as e:
-            print(f"Error occurred while running async operation: {e}")
+            logging.exception(f"Error occurred while running async operation: {e}")
             raise
 
-    def discover_tools(self) -> List[Dict]:
+    def discover_tools(self) -> list[dict]:
         """
         Discover available tools from the MCP server using FastMCP.
 
@@ -280,7 +276,8 @@ class MCPTool(Tool):
             self.available_tools = tools
             return self.available_tools
         except Exception as e:
-            raise Exception(f"Failed to discover tools from MCP server: {str(e)}")
+            logging.exception(f"Failed to discover tools from MCP server: {e}")
+            raise
 
     def execute_action(self, action_name: str, **kwargs) -> Any:
         """
@@ -308,7 +305,8 @@ class MCPTool(Tool):
             )
             return self._format_result(result)
         except Exception as e:
-            raise Exception(f"Failed to execute action '{action_name}': {str(e)}")
+            logging.exception(f"Failed to execute action '{action_name}': {e}")
+            raise
 
     def _format_result(self, result) -> Dict:
         """Format FastMCP result to match expected format."""
@@ -330,7 +328,7 @@ class MCPTool(Tool):
         else:
             return result
 
-    def test_connection(self) -> Dict:
+    def test_connection(self) -> dict:
         """
         Test the connection to the MCP server and validate functionality.
 
@@ -354,21 +352,23 @@ class MCPTool(Tool):
             else:
                 return self._test_regular_connection()
         except Exception as e:
+            logging.exception(f"Connection failed: {e}")
             return {
                 "success": False,
-                "message": f"Connection failed: {str(e)}",
+                "message": f"Connection failed: {e}",
                 "tools_count": 0,
                 "transport_type": self.transport_type,
                 "auth_type": self.auth_type,
                 "error_type": type(e).__name__,
             }
 
-    def _test_regular_connection(self) -> Dict:
+    def _test_regular_connection(self) -> dict:
         """Test connection for non-OAuth auth types."""
         try:
             self._run_async_operation("ping")
             ping_success = True
         except Exception:
+            logging.exception("Ping failed")
             ping_success = False
         tools = self.discover_tools()
 
@@ -385,12 +385,12 @@ class MCPTool(Tool):
             "tools": [tool.get("name", "unknown") for tool in tools],
         }
 
-    def _test_oauth_connection(self) -> Dict:
+    def _test_oauth_connection(self) -> dict:
         """Test connection for OAuth auth type with proper async handling."""
         try:
             task = mcp_oauth_task.delay(config=self.config, user=self.user_id)
             if not task:
-                raise Exception("Failed to start OAuth authentication")
+                raise RuntimeError("Failed to start OAuth authentication")
             return {
                 "success": True,
                 "requires_oauth": True,
@@ -399,16 +399,17 @@ class MCPTool(Tool):
                 "message": "OAuth flow started",
             }
         except Exception as e:
+            logging.exception(f"OAuth connection failed: {e}")
             return {
                 "success": False,
-                "message": f"OAuth connection failed: {str(e)}",
+                "message": f"OAuth connection failed: {e}",
                 "tools_count": 0,
                 "transport_type": self.transport_type,
                 "auth_type": self.auth_type,
                 "error_type": type(e).__name__,
             }
 
-    def get_actions_metadata(self) -> List[Dict]:
+    def get_actions_metadata(self) -> list[dict]:
         """
         Get metadata for all available actions.
 
@@ -823,7 +824,7 @@ class MCPOAuthManager:
         self.redis_prefix = redis_prefix
 
     def handle_oauth_callback(
-        self, state: str, code: str, error: Optional[str] = None
+        self, state: str, code: str, error: str | None = None
     ) -> bool:
         """
         Handle OAuth callback from provider.
@@ -838,11 +839,11 @@ class MCPOAuthManager:
         """
         try:
             if not self.redis_client or not state:
-                raise Exception("Redis client or state not provided")
+                raise RuntimeError("Redis client or state not provided")
             if error:
                 error_key = f"{self.redis_prefix}error:{state}"
                 self.redis_client.setex(error_key, 300, error)
-                raise Exception(f"OAuth error received: {error}")
+                raise RuntimeError(f"OAuth error received: {error}")
             code_key = f"{self.redis_prefix}code:{state}"
             self.redis_client.setex(code_key, 300, code)
 
@@ -851,10 +852,10 @@ class MCPOAuthManager:
 
             return True
         except Exception as e:
-            logging.error(f"Error handling OAuth callback: {e}")
+            logging.exception(f"Error handling OAuth callback: {e}")
             return False
 
-    def get_oauth_status(self, task_id: str) -> Dict[str, Any]:
+    def get_oauth_status(self, task_id: str) -> dict[str, Any]:
         """Get current status of OAuth flow using provided task_id."""
         if not task_id:
             return {"status": "not_started", "message": "OAuth flow not started"}

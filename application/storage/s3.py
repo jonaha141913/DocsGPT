@@ -2,19 +2,19 @@
 
 import io
 import os
-from typing import BinaryIO, Callable, List
+from typing import BinaryIO, Callable
 
 import boto3
-from application.core.settings import settings
-
-from application.storage.base import BaseStorage
 from botocore.exceptions import ClientError
+
+from application.core.settings import settings
+from application.storage.base import BaseStorage
 
 
 class S3Storage(BaseStorage):
     """AWS S3 storage implementation."""
 
-    def __init__(self, bucket_name=None):
+    def __init__(self, bucket_name: str | None = None):
         """
         Initialize S3 storage.
 
@@ -95,9 +95,8 @@ class S3Storage(BaseStorage):
         pages = paginator.paginate(Bucket=self.bucket_name, Prefix=directory)
 
         for page in pages:
-            if "Contents" in page:
-                for obj in page["Contents"]:
-                    result.append(obj["Key"])
+            for obj in page.get("Contents", []):
+                result.append(obj["Key"])
         return result
 
     def process_file(self, path: str, processor_func: Callable, **kwargs):
@@ -127,8 +126,8 @@ class S3Storage(BaseStorage):
                 temp_file.flush()
 
                 return processor_func(local_path=temp_file.name, **kwargs)
-            except Exception as e:
-                logging.error(f"Error processing S3 file {path}: {e}", exc_info=True)
+            except Exception:
+                logging.exception(f"Error processing S3 file {path}")
                 raise
 
     def is_directory(self, path: str) -> bool:
