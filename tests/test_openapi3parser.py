@@ -1,6 +1,8 @@
-import pytest
-from application.parser.file.openapi3_parser import OpenAPI3Parser
 from openapi_parser import parse
+
+from application.parser.file.openapi3_parser import OpenAPI3Parser
+
+import pytest
 
 
 @pytest.mark.parametrize(

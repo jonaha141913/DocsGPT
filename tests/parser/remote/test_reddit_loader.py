@@ -1,8 +1,7 @@
-import json
-from unittest.mock import patch, MagicMock
-import pytest
-
 from application.parser.remote.reddit_loader import RedditPostsLoaderRemote
+import json
+import pytest
+from unittest.mock import patch, MagicMock
 
 
 class TestRedditPostsLoaderRemote:

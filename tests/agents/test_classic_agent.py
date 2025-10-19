@@ -1,6 +1,7 @@
+import pytest
+
 from unittest.mock import Mock
 
-import pytest
 from application.agents.classic_agent import ClassicAgent
 
 

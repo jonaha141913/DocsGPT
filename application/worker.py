@@ -6,7 +6,6 @@ import os
 import shutil
 import string
 import tempfile
-from typing import Any, Dict
 import zipfile
 
 from collections import Counter
@@ -81,7 +80,7 @@ def extract_zip_recursive(zip_path, extract_to, current_depth=0, max_depth=5):
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_to)
         os.remove(zip_path)  # Remove the zip file after extracting
-    except Exception as e:
+    except (zipfile.BadZipFile, OSError) as e:
         logging.error(f"Error extracting zip file {zip_path}: {e}", exc_info=True)
         return
     # Check for nested zip files and extract them
@@ -540,6 +539,7 @@ def reingest_source_worker(self, source_id, user):
                                         logging.error(
                                             f"Failed deleting chunk {cid}: {de}"
                                         )
+                                        raise
                         logging.info(
                             f"Deleted {deleted} chunks from {len(removed_files)} removed files"
                         )
@@ -548,6 +548,7 @@ def reingest_source_worker(self, source_id, user):
                             f"Error during deletion of removed file chunks: {e}",
                             exc_info=True,
                         )
+                        raise
 
                 # 2) Add chunks from new files
                 added = 0
@@ -609,6 +610,7 @@ def reingest_source_worker(self, source_id, user):
                                     logging.warning(
                                         f"Could not update token count for {file_path}: {e}"
                                     )
+                                    raise
 
                             for d in chunked_new:
                                 meta = dict(d.extra_info or {})
@@ -621,7 +623,9 @@ def reingest_source_worker(self, source_id, user):
                                             raw_src, start=temp_dir
                                         )
                                 except Exception:
-                                    pass
+                                    logging.warning(
+                                        f"Could not update source path for {file_path}"
+                                    )
 
                                 vector_store.add_chunk(d.text, metadata=meta)
                                 added += 1
@@ -632,6 +636,7 @@ def reingest_source_worker(self, source_id, user):
                         logging.error(
                             f"Error during ingestion of new files: {e}", exc_info=True
                         )
+                        raise
 
                 # 3) Update source directory structure timestamp
                 try:
@@ -642,7 +647,7 @@ def reingest_source_worker(self, source_id, user):
                         {
                             "$set": {
                                 "directory_structure": directory_structure,
-                                "date": datetime.datetime.now(),
+                                "date": datetime.datetime.now(tz=datetime.timezone.utc),
                                 "tokens": total_tokens,
                             }
                         },
@@ -651,6 +656,7 @@ def reingest_source_worker(self, source_id, user):
                     logging.error(
                         f"Error updating directory_structure in DB: {e}", exc_info=True
                     )
+                    raise
 
                 self.update_state(
                     state="PROGRESS",
@@ -732,7 +738,7 @@ def remote_worker(
         }
 
         if operation_mode == "sync":
-            file_data["last_sync"] = datetime.datetime.now()
+            file_data["last_sync"] = datetime.datetime.now(tz=datetime.timezone.utc)
         upload_index(full_path, file_data)
     except Exception as e:
         logging.error("Error in remote_worker task: %s", str(e), exc_info=True)
@@ -856,7 +862,7 @@ def attachment_worker(self, file_info, user):
                 "content": content,
                 "token_count": token_count,
                 "mime_type": mime_type,
-                "date": datetime.datetime.now(),
+                "date": datetime.datetime.now(tz=datetime.timezone.utc),
                 "metadata": metadata,
             }
         )
@@ -921,7 +927,7 @@ def agent_webhook_worker(self, agent_id, payload):
         logging.info(
             f"Webhook processed for agent {agent_id}", extra={"agent_id": agent_id}
         )
-        return {"status": "success", "result": result}
+    return {"status": "success", "result": result}
 
 
 def ingest_connector(
@@ -937,7 +943,7 @@ def ingest_connector(
     operation_mode: str = "upload",
     doc_id=None,
     sync_frequency: str = "never",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Ingestion for internal knowledge bases (GoogleDrive, etc.).
 

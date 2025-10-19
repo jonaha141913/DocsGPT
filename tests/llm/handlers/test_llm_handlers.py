@@ -1,7 +1,8 @@
-from typing import Any, Dict, Generator
-from unittest.mock import Mock, patch
+from collections.abc import Generator
+from typing import Any
 
 from application.llm.handlers.base import LLMHandler, LLMResponse, ToolCall
+from unittest.mock import Mock, patch
 
 
 class TestToolCall:
@@ -134,6 +135,8 @@ class TestLLMHandler:
 
         with patch.object(
             handler, "_append_unsupported_attachments", return_value=messages
+        ), patch.object(
+            handler, "_append_unsupported_attachments", return_value=messages
         ) as mock_append:
             result = handler.prepare_messages(mock_agent, messages, attachments)
             mock_append.assert_called_once_with(messages, attachments)
@@ -152,6 +155,8 @@ class TestLLMHandler:
         mock_agent.llm.prepare_messages_with_attachments.return_value = messages
 
         with patch.object(
+            handler, "_append_unsupported_attachments", return_value=messages
+        ), patch.object(
             handler, "_append_unsupported_attachments", return_value=messages
         ) as mock_append:
             result = handler.prepare_messages(mock_agent, messages, attachments)
