@@ -1,8 +1,9 @@
 import datetime
-from unittest.mock import MagicMock, patch
+import json
 
 import pytest
 from bson import ObjectId
+from unittest.mock import MagicMock, patch
 
 
 @pytest.mark.unit
@@ -186,7 +187,7 @@ class TestUsageChecking:
                     "api_key": "test_key",
                     "prompt_tokens": 60,
                     "generated_tokens": 50,
-                    "timestamp": datetime.datetime.now(),
+                    "timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
                 }
             )
 
@@ -221,7 +222,7 @@ class TestUsageChecking:
                 }
             )
 
-            now = datetime.datetime.now()
+            now = datetime.datetime.now(tz=datetime.timezone.utc)
             for i in range(3):
                 token_usage_collection.insert_one(
                     {
@@ -269,8 +270,6 @@ class TestUsageChecking:
 @pytest.mark.unit
 class TestGPTModelRetrieval:
     def test_initializes_gpt_model(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -281,8 +280,6 @@ class TestGPTModelRetrieval:
 @pytest.mark.unit
 class TestConversationServiceIntegration:
     def test_initializes_conversation_service(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -290,8 +287,6 @@ class TestConversationServiceIntegration:
             assert resource.conversation_service is not None
 
     def test_has_access_to_user_logs_collection(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -302,8 +297,6 @@ class TestConversationServiceIntegration:
 @pytest.mark.unit
 class TestCompleteStreamMethod:
     def test_streams_answer_chunks(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -338,8 +331,6 @@ class TestCompleteStreamMethod:
             assert '"answer": "world!"' in answer_chunks[1]
 
     def test_streams_sources(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -373,8 +364,6 @@ class TestCompleteStreamMethod:
             assert '"title": "doc1.txt"' in source_chunks[0]
 
     def test_handles_error_during_streaming(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -401,8 +390,6 @@ class TestCompleteStreamMethod:
             assert any('"type": "error"' in s for s in stream)
 
     def test_saves_conversation_when_enabled(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -438,7 +425,6 @@ class TestCompleteStreamMethod:
                 mock_save.assert_called_once()
 
     def test_logs_to_user_logs_collection(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
         from application.core.settings import settings
 
         with flask_app.app_context():
@@ -504,10 +490,6 @@ class TestProcessResponseStream:
             assert result[5] is None
 
     def test_handles_stream_error(self, mock_mongo_db, flask_app):
-        import json
-
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -522,8 +504,6 @@ class TestProcessResponseStream:
             assert result[4] == "Test error"
 
     def test_handles_malformed_stream_data(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -540,8 +520,6 @@ class TestProcessResponseStream:
 @pytest.mark.unit
 class TestErrorStreamGenerate:
     def test_generates_error_stream(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 

@@ -1,10 +1,10 @@
 import datetime
 import functools
 import inspect
-
 import logging
 import uuid
-from typing import Any, Callable, Dict, Generator, List
+from collections.abc import Generator
+from typing import Any, Callable
 
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
@@ -26,10 +26,10 @@ class LogContext:
 
 def build_stack_data(
     obj: Any,
-    include_attributes: List[str] = None,
-    exclude_attributes: List[str] = None,
-    custom_data: Dict = None,
-) -> Dict:
+    include_attributes: list[str] | None = None,
+    exclude_attributes: list[str] | None = None,
+    custom_data: dict | None = None,
+) -> dict:
     if obj is None:
         raise ValueError("The 'obj' parameter cannot be None")
     data = {}
@@ -61,8 +61,6 @@ def build_stack_data(
                     data[attr_name] = {k: str(v) for k, v in attr_value.items()}
         except AttributeError as e:
             logging.warning(f"AttributeError while accessing {attr_name}: {e}")
-        except AttributeError:
-            pass
     if custom_data:
         data.update(custom_data)
     return data
@@ -129,15 +127,13 @@ def _log_to_mongodb(
     user: str,
     api_key: str,
     query: str,
-    stacks: List[Dict],
+    stacks: list[dict],
     level: str,
 ) -> None:
     try:
         mongo = MongoDB.get_client()
         db = mongo[settings.MONGO_DB_NAME]
         user_logs_collection = db["stack_logs"]
-        
-
 
         log_entry = {
             "endpoint": endpoint,
@@ -153,9 +149,9 @@ def _log_to_mongodb(
         for key, value in log_entry.items():
             if isinstance(value, str) and len(value) > 10000:
                 log_entry[key] = value[:10000]
-    
+
         user_logs_collection.insert_one(log_entry)
         logging.debug(f"Logged activity to MongoDB: {activity_id}")
 
     except Exception as e:
-        logging.error(f"Failed to log to MongoDB: {e}", exc_info=True)
+        logging.exception(f"Failed to log to MongoDB: {e}")

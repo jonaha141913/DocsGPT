@@ -2,15 +2,15 @@ import logging
 import os
 from abc import ABC, abstractmethod
 
+from application.core.settings import settings
 from langchain_openai import OpenAIEmbeddings
 from sentence_transformers import SentenceTransformer
-
-from application.core.settings import settings
 
 
 class EmbeddingsWrapper:
     def __init__(self, model_name, *args, **kwargs):
-        logging.info(f"Initializing EmbeddingsWrapper with model: {model_name}")
+        logger = logging.getLogger(__name__)
+        logger.info(f"Initializing EmbeddingsWrapper with model: {model_name}")
         try:
             kwargs.setdefault("trust_remote_code", True)
             self.model = SentenceTransformer(
@@ -24,11 +24,10 @@ class EmbeddingsWrapper:
                     f"SentenceTransformer model failed to load properly for: {model_name}"
                 )
             self.dimension = self.model.get_sentence_embedding_dimension()
-            logging.info(f"Successfully loaded model with dimension: {self.dimension}")
+            logger.info(f"Successfully loaded model with dimension: {self.dimension}")
         except Exception as e:
-            logging.error(
-                f"Failed to initialize SentenceTransformer with model {model_name}: {str(e)}",
-                exc_info=True,
+            logger.exception(
+                f"Failed to initialize SentenceTransformer with model {model_name}: {str(e)}"
             )
             raise
 
@@ -44,11 +43,11 @@ class EmbeddingsWrapper:
         elif isinstance(text, list):
             return self.embed_documents(text)
         else:
-            raise ValueError("Input must be a string or a list of strings")
+            raise TypeError("Input must be a string or a list of strings")
 
 
 class EmbeddingsSingleton:
-    _instances = {}
+    _instances: dict = {}
 
     @staticmethod
     def get_instance(embeddings_name, *args, **kwargs):

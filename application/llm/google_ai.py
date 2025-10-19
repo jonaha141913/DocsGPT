@@ -1,13 +1,12 @@
 import json
 import logging
 
-from google import genai
-from google.genai import types
-
 from application.core.settings import settings
-
 from application.llm.base import BaseLLM
 from application.storage.storage_creator import StorageCreator
+
+from google import genai
+from google.genai import types
 
 
 class GoogleLLM(BaseLLM):
@@ -17,6 +16,113 @@ class GoogleLLM(BaseLLM):
         self.user_api_key = user_api_key
         self.client = genai.Client(api_key=self.api_key)
         self.storage = StorageCreator.get_storage()
+
+    def prepare_messages_with_attachments(self, messages, attachments=None):
+        """
+        Process attachments using Google AI's file API for more efficient handling.
+
+        Args:
+            messages (list): List of message dictionaries.
+            attachments (list): List of attachment dictionaries with content and metadata.
+
+        Returns:
+            list: Messages formatted with file references for Google AI API.
+        """
+        if not attachments:
+            return messages
+
+        prepared_messages = messages.copy()
+
+        # Find the user message to attach files to the last one
+        user_message_index = None
+        for i in range(len(prepared_messages) - 1, -1, -1):
+            if prepared_messages[i].get("role") == "user":
+                user_message_index = i
+                break
+
+        if user_message_index is None:
+            user_message = {"role": "user", "content": []}
+            prepared_messages.append(user_message)
+            user_message_index = len(prepared_messages) - 1
+
+        if isinstance(prepared_messages[user_message_index].get("content"), str):
+            text_content = prepared_messages[user_message_index]["content"]
+            prepared_messages[user_message_index]["content"] = [
+                {"type": "text", "text": text_content}
+            ]
+        elif not isinstance(prepared_messages[user_message_index].get("content"), list):
+            prepared_messages[user_message_index]["content"] = []
+
+        files = []
+        for attachment in attachments:
+            mime_type = attachment.get("mime_type")
+
+            if mime_type in self.get_supported_attachment_types():
+                try:
+                    file_uri = self._upload_file_to_google(attachment)
+                    logger.info(
+                        f"GoogleLLM: Successfully uploaded file, got URI: {file_uri}"
+                    )
+                    files.append({"file_uri": file_uri, "mime_type": mime_type})
+                except Exception as e:
+                    logger.exception(
+                        f"GoogleLLM: Error uploading file: {e}"
+                    )
+                    prepared_messages[user_message_index]["content"].append(
+                        {
+                            "type": "text",
+                            "text": f"[File could not be processed: {attachment.get('path', 'unknown')}]",
+                        }
+                    )
+
+        if files:
+            logger.info(f"GoogleLLM: Adding {len(files)} files to message")
+            prepared_messages[user_message_index]["content"].append({"files": files})
+
+        return prepared_messages
+
+    def _upload_file_to_google(self, attachment):
+        """
+        Upload a file to Google AI and return the file URI.
+
+        Args:
+            attachment (dict): Attachment dictionary with path and metadata.
+
+        Returns:
+            str: Google AI file URI for the uploaded file.
+        """
+        if "google_file_uri" in attachment:
+            return attachment["google_file_uri"]
+
+        file_path = attachment.get("path")
+        if not file_path:
+            raise ValueError("No file path provided in attachment")
+
+        if not self.storage.file_exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
+        try:
+            file_uri = self.storage.process_file(
+                file_path,
+                lambda local_path, **kwargs: self.client.files.upload(
+                    file=local_path
+                ).uri,
+            )
+
+            from application.core.mongo_db import MongoDB
+
+            mongo = MongoDB.get_client()
+            db = mongo[settings.MONGO_DB_NAME]
+            attachments_collection = db["attachments"]
+            if "_id" in attachment:
+                attachments_collection.update_one(
+                    {"_id": attachment["_id"]}, {"$set": {"google_file_uri": file_uri}}
+                )
+
+            return file_uri
+        except Exception as e:
+            logger.exception(f"Error uploading file to Google AI: {e}")
+            raise
 
     def get_supported_attachment_types(self):
         """
@@ -77,24 +183,23 @@ class GoogleLLM(BaseLLM):
             if mime_type in self.get_supported_attachment_types():
                 try:
                     file_uri = self._upload_file_to_google(attachment)
-                    logging.info(
+                    logger.info(
                         f"GoogleLLM: Successfully uploaded file, got URI: {file_uri}"
                     )
                     files.append({"file_uri": file_uri, "mime_type": mime_type})
                 except Exception as e:
-                    logging.error(
-                        f"GoogleLLM: Error uploading file: {e}", exc_info=True
+                    logger.exception(
+                        f"GoogleLLM: Error uploading file: {e}"
                     )
-                    if "content" in attachment:
-                        prepared_messages[user_message_index]["content"].append(
-                            {
-                                "type": "text",
-                                "text": f"[File could not be processed: {attachment.get('path', 'unknown')}]",
-                            }
-                        )
+                    prepared_messages[user_message_index]["content"].append(
+                        {
+                            "type": "text",
+                            "text": f"[File could not be processed: {attachment.get('path', 'unknown')}]",
+                        }
+                    )
 
         if files:
-            logging.info(f"GoogleLLM: Adding {len(files)} files to message")
+            logger.info(f"GoogleLLM: Adding {len(files)} files to message")
             prepared_messages[user_message_index]["content"].append({"files": files})
 
         return prepared_messages
@@ -139,7 +244,7 @@ class GoogleLLM(BaseLLM):
 
             return file_uri
         except Exception as e:
-            logging.error(f"Error uploading file to Google AI: {e}", exc_info=True)
+            logger.exception(f"Error uploading file to Google AI: {e}")
             raise
 
     def _clean_messages_google(self, messages):
@@ -260,24 +365,20 @@ class GoogleLLM(BaseLLM):
                     for k, v in properties.items():
                         cleaned_properties[k] = self._clean_schema(v)
 
-                    genai_function = dict(
-                        name=function["name"],
-                        description=function["description"],
-                        parameters={
+                    genai_function = {
+                        "name": function["name"],
+                        "description": function["description"],
+                        "parameters": {
                             "type": "OBJECT",
                             "properties": cleaned_properties,
-                            "required": (
-                                parameters["required"]
-                                if "required" in parameters
-                                else []
-                            ),
+                            "required": parameters.get("required", []),
                         },
-                    )
+                    }
                 else:
-                    genai_function = dict(
-                        name=function["name"],
-                        description=function["description"],
-                    )
+                    genai_function = {
+                        "name": function["name"],
+                        "description": function["description"],
+                    }
 
                 genai_tool = types.Tool(function_declarations=[genai_function])
                 genai_tools.append(genai_tool)
@@ -461,8 +562,7 @@ class GoogleLLM(BaseLLM):
         try:
             return convert(json_schema)
         except Exception as e:
-            logging.error(
-                f"Error preparing structured output format for Google: {e}",
-                exc_info=True,
+            logger.exception(
+                f"Error preparing structured output format for Google: {e}"
             )
             return None

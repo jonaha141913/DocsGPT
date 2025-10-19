@@ -1,4 +1,5 @@
-from typing import Any, Dict, Generator
+from typing import Any
+from collections.abc import Generator
 from unittest.mock import Mock, patch
 
 from application.llm.handlers.base import LLMHandler, LLMResponse, ToolCall
@@ -90,8 +91,7 @@ class ConcreteHandler(LLMHandler):
         return {"role": "tool", "content": str(result), "tool_call_id": tool_call.id}
 
     def _iterate_stream(self, response: Any) -> Generator:
-        for chunk in response:
-            yield chunk
+        yield from response
 
 
 class TestLLMHandler:
@@ -153,7 +153,9 @@ class TestLLMHandler:
 
         with patch.object(
             handler, "_append_unsupported_attachments", return_value=messages
-        ) as mock_append:
+        ) as mock_append, patch.object(
+            mock_agent.llm, "prepare_messages_with_attachments", return_value=messages
+        ):
             result = handler.prepare_messages(mock_agent, messages, attachments)
 
             mock_agent.llm.prepare_messages_with_attachments.assert_called_once()

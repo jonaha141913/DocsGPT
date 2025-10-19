@@ -1,8 +1,8 @@
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 import re
 import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Any
 
 from .base import Tool
 from application.core.mongo_db import MongoDB
@@ -93,7 +93,7 @@ class MemoryTool(Tool):
 
         return f"Unknown action: {action_name}"
 
-    def get_actions_metadata(self) -> List[Dict[str, Any]]:
+    def get_actions_metadata(self) -> list[dict[str, Any]]:
         """Return JSON metadata describing supported actions for tool schemas."""
         return [
             {
@@ -211,14 +211,14 @@ class MemoryTool(Tool):
             },
         ]
 
-    def get_config_requirements(self) -> Dict[str, Any]:
+    def get_config_requirements(self) -> dict[str, Any]:
         """Return configuration requirements."""
         return {}
 
     # -----------------------------
     # Path validation
     # -----------------------------
-    def _validate_path(self, path: str) -> Optional[str]:
+    def _validate_path(self, path: str) -> str | None:
         """Validate and normalize path.
 
         Args:
@@ -258,7 +258,7 @@ class MemoryTool(Tool):
                 normalized = normalized + "/"
 
             return normalized
-        except Exception:
+        except (OSError, ValueError):
             return None
 
     # -----------------------------
@@ -349,7 +349,7 @@ class MemoryTool(Tool):
             {
                 "$set": {
                     "content": file_text,
-                    "updated_at": datetime.now()
+                    "updated_at": datetime.now(timezone.utc)
                 }
             },
             upsert=True
@@ -386,7 +386,7 @@ class MemoryTool(Tool):
             {
                 "$set": {
                     "content": updated_content,
-                    "updated_at": datetime.now()
+                    "updated_at": datetime.now(timezone.utc)
                 }
             }
         )
@@ -423,7 +423,7 @@ class MemoryTool(Tool):
             {
                 "$set": {
                     "content": updated_content,
-                    "updated_at": datetime.now()
+                    "updated_at": datetime.now(timezone.utc)
                 }
             }
         )
@@ -508,7 +508,7 @@ class MemoryTool(Tool):
 
                 self.collection.update_one(
                     {"_id": doc["_id"]},
-                    {"$set": {"path": new_file_path, "updated_at": datetime.now()}}
+                    {"$set": {"path": new_file_path, "updated_at": datetime.now(timezone.utc)}}
                 )
 
             return f"Renamed directory: {validated_old} -> {validated_new} ({len(docs)} files)"
