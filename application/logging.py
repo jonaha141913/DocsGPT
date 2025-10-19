@@ -1,10 +1,9 @@
 import datetime
 import functools
 import inspect
-
 import logging
 import uuid
-from typing import Any, Callable, Dict, Generator, List
+from typing import Any, Callable, Generator
 
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
@@ -26,10 +25,10 @@ class LogContext:
 
 def build_stack_data(
     obj: Any,
-    include_attributes: List[str] = None,
-    exclude_attributes: List[str] = None,
-    custom_data: Dict = None,
-) -> Dict:
+    include_attributes: list[str] | None = None,
+    exclude_attributes: list[str] | None = None,
+    custom_data: dict | None = None,
+) -> dict:
     if obj is None:
         raise ValueError("The 'obj' parameter cannot be None")
     data = {}
@@ -98,6 +97,8 @@ def _consume_and_log(generator: Generator, context: "LogContext"):
     try:
         for item in generator:
             yield item
+    except GeneratorExit:
+        raise
     except Exception as e:
         logging.exception(f"Error in {context.endpoint} - {context.activity_id}: {e}")
         context.stacks.append({"component": "error", "data": {"message": str(e)}})
@@ -158,4 +159,4 @@ def _log_to_mongodb(
         logging.debug(f"Logged activity to MongoDB: {activity_id}")
 
     except Exception as e:
-        logging.error(f"Failed to log to MongoDB: {e}", exc_info=True)
+        logging.exception(f"Failed to log to MongoDB: {e}")

@@ -2,7 +2,7 @@
 
 import io
 import os
-from typing import BinaryIO, Callable, List
+from typing import BinaryIO, Callable
 
 import boto3
 from application.core.settings import settings
@@ -128,7 +128,7 @@ class S3Storage(BaseStorage):
 
                 return processor_func(local_path=temp_file.name, **kwargs)
             except Exception as e:
-                logging.error(f"Error processing S3 file {path}: {e}", exc_info=True)
+                logging.exception(f"Error processing S3 file {path}")
                 raise
 
     def is_directory(self, path: str) -> bool:

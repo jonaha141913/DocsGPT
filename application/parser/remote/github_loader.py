@@ -1,11 +1,10 @@
 import base64
+import mimetypes
 import requests
 import time
-from typing import List, Optional
+from application.core.settings import settings
 from application.parser.remote.base import BaseRemote
 from application.parser.schema.base import Document
-import mimetypes
-from application.core.settings import settings
 
 class GitHubLoader(BaseRemote):
     def __init__(self):
@@ -46,7 +45,7 @@ class GitHubLoader(BaseRemote):
 
         return False
 
-    def fetch_file_content(self, repo_url: str, file_path: str) -> Optional[str]:
+    def fetch_file_content(self, repo_url: str, file_path: str) -> str | None:
         """Fetch file content. Returns None if file should be skipped (binary files or empty files)."""
         url = f"https://api.github.com/repos/{repo_url}/contents/{file_path}"
         response = self._make_request(url)
@@ -61,7 +60,7 @@ class GitHubLoader(BaseRemote):
                     if not decoded_content:
                         return None
                     return decoded_content
-                except Exception:
+                except (UnicodeDecodeError, ValueError):
                     # If decoding fails, it's probably a binary file
                     return None
             else:
@@ -76,6 +75,8 @@ class GitHubLoader(BaseRemote):
 
     def _make_request(self, url: str, max_retries: int = 3) -> requests.Response:
         """Make a request with retry logic for rate limiting"""
+        import logging
+        logger = logging.getLogger(__name__)
         for attempt in range(max_retries):
             response = requests.get(url, headers=self.headers)
 
@@ -91,23 +92,23 @@ class GitHubLoader(BaseRemote):
                     remaining = response.headers.get("X-RateLimit-Remaining", "unknown")
                     reset_time = response.headers.get("X-RateLimit-Reset", "unknown")
 
-                    print(f"GitHub API 403 Error: {error_msg}")
-                    print(f"Rate limit remaining: {remaining}, Reset time: {reset_time}")
+                    logger.warning(f"GitHub API 403 Error: {error_msg}")
+                    logger.warning(f"Rate limit remaining: {remaining}, Reset time: {reset_time}")
 
                     if "rate limit" in error_msg.lower():
                         if attempt < max_retries - 1:
                             wait_time = 2 ** attempt  # Exponential backoff
-                            print(f"Rate limit hit, waiting {wait_time} seconds before retry...")
+                            logger.info(f"Rate limit hit, waiting {wait_time} seconds before retry...")
                             time.sleep(wait_time)
                             continue
 
                     # Provide helpful error message
                     if remaining == "0":
-                        raise Exception(f"GitHub API rate limit exceeded. Please set GITHUB_ACCESS_TOKEN environment variable. Reset time: {reset_time}")
+                        raise RuntimeError(f"GitHub API rate limit exceeded. Please set GITHUB_ACCESS_TOKEN environment variable. Reset time: {reset_time}")
                     else:
-                        raise Exception(f"GitHub API error: {error_msg}. This may require authentication - set GITHUB_ACCESS_TOKEN environment variable.")
-                except Exception as e:
-                    if isinstance(e, Exception) and "GitHub API" in str(e):
+                        raise RuntimeError(f"GitHub API error: {error_msg}. This may require authentication - set GITHUB_ACCESS_TOKEN environment variable.")
+                except (json.JSONDecodeError, requests.exceptions.RequestException) as e:
+                    if isinstance(e, RuntimeError) and "GitHub API" in str(e):
                         raise
                     # If we can't parse the response, raise the original error
                     response.raise_for_status()
@@ -116,7 +117,7 @@ class GitHubLoader(BaseRemote):
 
         return response
 
-    def fetch_repo_files(self, repo_url: str, path: str = "") -> List[str]:
+    def fetch_repo_files(self, repo_url: str, path: str = "") -> list[str]:
         url = f"https://api.github.com/repos/{repo_url}/contents/{path}"
         response = self._make_request(url)
 
@@ -124,7 +125,7 @@ class GitHubLoader(BaseRemote):
 
         # Handle error responses from GitHub API
         if isinstance(contents, dict) and "message" in contents:
-            raise Exception(f"GitHub API error: {contents.get('message')}")
+            raise ValueError(f"GitHub API error: {contents.get('message')}")
 
         # Ensure contents is a list
         if not isinstance(contents, list):

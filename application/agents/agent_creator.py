@@ -3,13 +3,15 @@ from application.agents.react_agent import ReActAgent
 
 
 class AgentCreator:
-    agents = {
-        "classic": ClassicAgent,
-        "react": ReActAgent,
-    }
+    agents: dict[str, type] = {}
 
     @classmethod
     def create_agent(cls, type, *args, **kwargs):
+        if not cls.agents:
+            cls.agents = {
+                "classic": ClassicAgent,
+                "react": ReActAgent,
+            }
         agent_class = cls.agents.get(type.lower())
         if not agent_class:
             raise ValueError(f"No agent class found for type {type}")

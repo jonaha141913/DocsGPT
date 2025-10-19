@@ -1,4 +1,5 @@
-from typing import Any, Dict, Generator
+from typing import Any
+from collections.abc import Generator
 from unittest.mock import Mock, patch
 
 from application.llm.handlers.base import LLMHandler, LLMResponse, ToolCall
@@ -153,7 +154,9 @@ class TestLLMHandler:
 
         with patch.object(
             handler, "_append_unsupported_attachments", return_value=messages
-        ) as mock_append:
+        ) as mock_append, patch.object(
+            mock_agent.llm, "prepare_messages_with_attachments", return_value=messages
+        ):
             result = handler.prepare_messages(mock_agent, messages, attachments)
 
             mock_agent.llm.prepare_messages_with_attachments.assert_called_once()
@@ -196,18 +199,17 @@ class TestLLMHandler:
 
         with patch.object(
             handler, "prepare_messages", return_value=messages
-        ) as mock_prepare:
-            with patch.object(
-                handler, "handle_streaming", return_value=mock_generator()
-            ) as mock_handle:
-                result = handler.process_message_flow(
-                    mock_agent, initial_response, tools_dict, messages, stream=True
-                )
+        ) as mock_prepare, patch.object(
+            handler, "handle_streaming", return_value=mock_generator()
+        ) as mock_handle:
+            result = handler.process_message_flow(
+                mock_agent, initial_response, tools_dict, messages, stream=True
+            )
 
-                mock_prepare.assert_called_once_with(mock_agent, messages, None)
-                mock_handle.assert_called_once_with(
-                    mock_agent, initial_response, tools_dict, messages
-                )
+            mock_prepare.assert_called_once_with(mock_agent, messages, None)
+            mock_handle.assert_called_once_with(
+                mock_agent, initial_response, tools_dict, messages
+            )
 
-                chunks = list(result)
-                assert chunks == ["chunk1", "chunk2"]
+            chunks = list(result)
+            assert chunks == ["chunk1", "chunk2"]

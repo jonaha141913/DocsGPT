@@ -1,7 +1,7 @@
 """Base storage class for file system abstraction."""
 
 from abc import ABC, abstractmethod
-from typing import BinaryIO, List, Callable
+from typing import BinaryIO, Callable
 
 
 class BaseStorage(ABC):
@@ -35,7 +35,7 @@ class BaseStorage(ABC):
         Returns:
             BinaryIO: File-like object containing the file data
         """
-        pass
+        ...
 
     @abstractmethod
     def process_file(self, path: str, processor_func: Callable, **kwargs):
