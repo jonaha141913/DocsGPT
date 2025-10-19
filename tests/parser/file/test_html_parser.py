@@ -1,9 +1,9 @@
-import pytest
-from pathlib import Path
-from unittest.mock import patch, MagicMock
-
 import sys
 import types
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from application.parser.file.html_parser import HTMLParser
 
@@ -21,7 +21,7 @@ def test_html_init_parser():
     assert parser.parser_config_set
 
 
-def test_html_parser_parse_file():
+def test_html_parser_parse_file() -> None:
     parser = HTMLParser()
     mock_doc = MagicMock()
     mock_doc.page_content = "Extracted HTML content"

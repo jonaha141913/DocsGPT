@@ -28,7 +28,7 @@ class APITool(Tool):
         # if isinstance(body, dict):
         #     body = json.dumps(body)
         try:
-            print(f"Making API call: {method} {url} with body: {body}")
+            logger.info(f"Making API call: {method} {url} with body: {body}")
             if body == "{}":
                 body = None
             response = requests.request(method, url, headers=headers, data=body)
@@ -40,7 +40,7 @@ class APITool(Tool):
                 try:
                     data = response.json()
                 except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON: {e}.  Raw response: {response.text}")
+                    logger.error(f"Error decoding JSON: {e}.  Raw response: {response.text}")
                     return {
                         "status_code": response.status_code,
                         "message": f"API call returned invalid JSON.  Error: {e}",
@@ -51,7 +51,7 @@ class APITool(Tool):
             elif not response.content:
                 data = None
             else:
-                print(f"Unsupported content type: {content_type}")
+                logger.warning(f"Unsupported content type: {content_type}")
                 data = response.content
 
             return {

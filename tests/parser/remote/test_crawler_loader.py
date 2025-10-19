@@ -10,7 +10,8 @@ class DummyResponse:
         self.text = text
 
     def raise_for_status(self) -> None:
-        return None
+        if self.status_code >= 400:
+            raise HTTPError(f"HTTP {self.status_code}")
 
 
 @patch("application.parser.remote.crawler_loader.requests.get")

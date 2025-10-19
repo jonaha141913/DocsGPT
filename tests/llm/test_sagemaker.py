@@ -3,10 +3,10 @@
 import json
 import unittest
 from unittest.mock import MagicMock, patch
+
 from application.llm.sagemaker import SagemakerAPILLM, LineIterator
 
 class TestSagemakerAPILLM(unittest.TestCase):
-    
     def setUp(self):
         self.sagemaker = SagemakerAPILLM()
         self.context = "This is the context"
@@ -50,7 +50,7 @@ class TestSagemakerAPILLM(unittest.TestCase):
             }
         ]
         self.response['Body'].read.return_value.decode.return_value = json.dumps(self.result)
-        
+
     def test_gen(self):
         with patch('application.cache.get_redis_instance') as mock_make_redis:
             mock_redis_instance = mock_make_redis.return_value
@@ -68,7 +68,7 @@ class TestSagemakerAPILLM(unittest.TestCase):
                                 self.result[0]['generated_text'][len(self.prompt):])
             mock_make_redis.assert_called_once()
             mock_redis_instance.set.assert_called_once()
-    
+
     def test_gen_stream(self):
         with patch('application.cache.get_redis_instance') as mock_make_redis:
             mock_redis_instance = mock_make_redis.return_value
@@ -85,7 +85,6 @@ class TestSagemakerAPILLM(unittest.TestCase):
                 self.assertEqual(output, [])
             mock_redis_instance.set.assert_called_once()
 class TestLineIterator(unittest.TestCase):
-    
     def setUp(self):
         self.stream = [
             {'PayloadPart': {'Bytes': b'{"outputs": [" a"]}\n'}},
@@ -93,10 +92,10 @@ class TestLineIterator(unittest.TestCase):
             {'PayloadPart': {'Bytes': b'{"outputs": [" problem"]}\n'}}
         ]
         self.line_iterator = LineIterator(self.stream)
-        
+
     def test_iter(self):
         self.assertEqual(iter(self.line_iterator), self.line_iterator)
-        
+
     def test_next(self):
         self.assertEqual(next(self.line_iterator), b'{"outputs": [" a"]}')
         self.assertEqual(next(self.line_iterator), b'{"outputs": [" challenging"]}')

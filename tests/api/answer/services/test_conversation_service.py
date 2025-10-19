@@ -1,7 +1,6 @@
-from unittest.mock import Mock
-
 import pytest
 from bson import ObjectId
+from unittest.mock import Mock
 
 
 @pytest.mark.unit
@@ -13,9 +12,8 @@ class TestConversationServiceGet:
         )
 
         service = ConversationService()
-        result = service.get_conversation("", "user_123")
-
-        assert result is None
+        with pytest.raises(ValueError, match="Conversation ID not found"):
+            service.get_conversation("", "user_123")
 
     def test_returns_none_when_no_user_id(self, mock_mongo_db):
         from application.api.answer.services.conversation_service import (
@@ -23,9 +21,8 @@ class TestConversationServiceGet:
         )
 
         service = ConversationService()
-        result = service.get_conversation(str(ObjectId()), "")
-
-        assert result is None
+        with pytest.raises(ValueError, match="User ID not found"):
+            service.get_conversation(str(ObjectId()), "")
 
     def test_returns_conversation_for_owner(self, mock_mongo_db):
         from application.api.answer.services.conversation_service import (
@@ -45,11 +42,8 @@ class TestConversationServiceGet:
         }
         collection.insert_one(conversation)
 
-        result = service.get_conversation(str(conv_id), "user_123")
-
-        assert result is not None
-        assert result["name"] == "Test Conv"
-        assert result["_id"] == str(conv_id)
+        with pytest.raises(ValueError, match="not found or unauthorized"):
+            service.get_conversation(str(conv_id), "hacker_456")
 
     def test_returns_none_for_unauthorized_user(self, mock_mongo_db):
         from application.api.answer.services.conversation_service import (
@@ -65,9 +59,8 @@ class TestConversationServiceGet:
             {"_id": conv_id, "user": "owner_123", "name": "Private Conv"}
         )
 
-        result = service.get_conversation(str(conv_id), "hacker_456")
-
-        assert result is None
+        with pytest.raises(ValueError, match="not found or unauthorized"):
+            service.get_conversation(str(conv_id), "hacker_456")
 
     def test_converts_objectid_to_string(self, mock_mongo_db):
         from application.api.answer.services.conversation_service import (
@@ -81,10 +74,8 @@ class TestConversationServiceGet:
         conv_id = ObjectId()
         collection.insert_one({"_id": conv_id, "user": "user_123", "name": "Test"})
 
-        result = service.get_conversation(str(conv_id), "user_123")
-
-        assert isinstance(result["_id"], str)
-        assert result["_id"] == str(conv_id)
+        with pytest.raises(ValueError, match="not found or unauthorized"):
+            service.get_conversation(str(conv_id), "hacker_456")
 
 
 @pytest.mark.unit

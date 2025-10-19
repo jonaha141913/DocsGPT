@@ -1,5 +1,6 @@
-from application.agents.tools.base import Tool
 from duckduckgo_search import DDGS
+
+from application.agents.tools.base import Tool
 
 
 class DuckDuckGoSearchTool(Tool):
@@ -40,7 +41,7 @@ class DuckDuckGoSearchTool(Tool):
                 "results": results,
                 "message": "Web search completed successfully.",
             }
-        except Exception as e:
+        except (KeyError, ValueError, ConnectionError) as e:
             return {
                 "status_code": 500,
                 "message": f"Web search failed: {str(e)}",
@@ -64,7 +65,7 @@ class DuckDuckGoSearchTool(Tool):
                 "results": results,
                 "message": "Image search completed successfully.",
             }
-        except Exception as e:
+        except (KeyError, ValueError, ConnectionError) as e:
             return {
                 "status_code": 500,
                 "message": f"Image search failed: {str(e)}",

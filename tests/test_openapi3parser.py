@@ -1,5 +1,5 @@
-import pytest
 from application.parser.file.openapi3_parser import OpenAPI3Parser
+import pytest
 from openapi_parser import parse
 
 

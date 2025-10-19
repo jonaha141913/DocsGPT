@@ -1,8 +1,7 @@
-from unittest.mock import Mock
+import pytest
 
 import mongomock
-
-import pytest
+from unittest.mock import Mock
 
 
 def get_settings():

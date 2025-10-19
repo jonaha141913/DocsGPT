@@ -1,6 +1,7 @@
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 import uuid
+from datetime import datetime, timezone
+from types import Optional
+from typing import Any
 
 from .base import Tool
 from application.core.mongo_db import MongoDB
@@ -13,7 +14,7 @@ class NotesTool(Tool):
     Single note. Supports viewing, overwriting, string replacement.
     """
 
-    def __init__(self, tool_config: Optional[Dict[str, Any]] = None, user_id: Optional[str] = None) -> None:
+    def __init__(self, tool_config: Optional[dict[str, Any]] = None, user_id: Optional[str] = None) -> None:
         """Initialize the tool.
 
         Args:
@@ -71,7 +72,7 @@ class NotesTool(Tool):
 
         return f"Unknown action: {action_name}"
 
-    def get_actions_metadata(self) -> List[Dict[str, Any]]:
+    def get_actions_metadata(self) -> list[dict[str, Any]]:
         """Return JSON metadata describing supported actions for tool schemas."""
         return [
             {
@@ -121,7 +122,7 @@ class NotesTool(Tool):
             },
         ]
 
-    def get_config_requirements(self) -> Dict[str, Any]:
+    def get_config_requirements(self) -> dict[str, Any]:
         """Return configuration requirements (none for now)."""
         return {}
 
@@ -140,7 +141,7 @@ class NotesTool(Tool):
             return "Note content required."
         self.collection.update_one(
             {"user_id": self.user_id, "tool_id": self.tool_id},
-            {"$set": {"note": content, "updated_at": datetime.utcnow()}},
+            {"$set": {"note": content, "updated_at": datetime.now(timezone.utc)}},
             upsert=True,  # ✅ create if missing
         )
         return "Note saved."
@@ -165,7 +166,7 @@ class NotesTool(Tool):
 
         self.collection.update_one(
             {"user_id": self.user_id, "tool_id": self.tool_id},
-            {"$set": {"note": updated_note, "updated_at": datetime.utcnow()}},
+            {"$set": {"note": updated_note, "updated_at": datetime.now(timezone.utc)}},
         )
         return "Note updated."
 
@@ -190,7 +191,7 @@ class NotesTool(Tool):
 
         self.collection.update_one(
             {"user_id": self.user_id, "tool_id": self.tool_id},
-            {"$set": {"note": updated_note, "updated_at": datetime.utcnow()}},
+            {"$set": {"note": updated_note, "updated_at": datetime.now(timezone.utc)}},
         )
         return "Text inserted."
 

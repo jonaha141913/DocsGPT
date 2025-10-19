@@ -1,7 +1,7 @@
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, List, Optional
+from typing import TYPE_CHECKING, Dict, Generator, List, Optional
 
 from bson.objectid import ObjectId
 
@@ -12,7 +12,9 @@ from application.core.settings import settings
 from application.llm.handlers.handler_creator import LLMHandlerCreator
 from application.llm.llm_creator import LLMCreator
 from application.logging import build_stack_data, log_activity, LogContext
-from application.retriever.base import BaseRetriever
+
+if TYPE_CHECKING:
+    from application.retriever.base import BaseRetriever
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +32,11 @@ class BaseAgent(ABC):
         decoded_token: Optional[Dict] = None,
         attachments: Optional[List[Dict]] = None,
         json_schema: Optional[Dict] = None,
-        limited_token_mode: Optional[bool] = False,
+        limited_token_mode: bool = False,
         token_limit: Optional[int] = settings.DEFAULT_AGENT_LIMITS["token_limit"],
-        limited_request_mode: Optional[bool] = False,
+        limited_request_mode: bool = False,
         request_limit: Optional[int] = settings.DEFAULT_AGENT_LIMITS["request_limit"],
-    ):
+    ) -> None:
         self.endpoint = endpoint
         self.llm_name = llm_name
         self.gpt_model = gpt_model
@@ -65,17 +67,17 @@ class BaseAgent(ABC):
 
     @log_activity()
     def gen(
-        self, query: str, retriever: BaseRetriever, log_context: LogContext = None
+        self, query: str, retriever: BaseRetriever, log_context: Optional[LogContext] = None
     ) -> Generator[Dict, None, None]:
         yield from self._gen_inner(query, retriever, log_context)
 
     @abstractmethod
     def _gen_inner(
-        self, query: str, retriever: BaseRetriever, log_context: LogContext
+        self, query: str, retriever: BaseRetriever, log_context: Optional[LogContext]
     ) -> Generator[Dict, None, None]:
         pass
 
-    def _get_tools(self, api_key: str = None) -> Dict[str, Dict]:
+    def _get_tools(self, api_key: Optional[str] = None) -> Dict[str, Dict]:
         mongo = MongoDB.get_client()
         db = mongo[settings.MONGO_DB_NAME]
         agents_collection = db["agents"]
@@ -96,7 +98,7 @@ class BaseAgent(ABC):
 
         return tools_by_id
 
-    def _get_user_tools(self, user="local"):
+    def _get_user_tools(self, user: str = "local") -> Dict[str, Dict]:
         mongo = MongoDB.get_client()
         db = mongo[settings.MONGO_DB_NAME]
         user_tools_collection = db["user_tools"]
@@ -105,7 +107,7 @@ class BaseAgent(ABC):
 
         return {str(i): tool for i, tool in enumerate(user_tools)}
 
-    def _build_tool_parameters(self, action):
+    def _build_tool_parameters(self, action: Dict) -> Dict:
         params = {"type": "object", "properties": {}, "required": []}
         for param_type in ["query_params", "headers", "body", "parameters"]:
             if param_type in action and action[param_type].get("properties"):
@@ -120,7 +122,7 @@ class BaseAgent(ABC):
                         params["required"].append(k)
         return params
 
-    def _prepare_tools(self, tools_dict):
+    def _prepare_tools(self, tools_dict: Dict[str, Dict]) -> None:
         self.tools = [
             {
                 "type": "function",

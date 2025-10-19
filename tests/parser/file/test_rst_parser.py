@@ -1,6 +1,7 @@
-import pytest
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import mock_open, patch
+
+import pytest
 
 from application.parser.file.rst_parser import RstParser
 
@@ -13,13 +14,13 @@ def rst_parser():
 @pytest.fixture
 def rst_parser_custom():
     return RstParser(
+        remove_characters_excess=False,
+        remove_directives=False,
         remove_hyperlinks=False,
         remove_images=False,
-        remove_table_excess=False,
         remove_interpreters=False,
-        remove_directives=False,
-        remove_whitespaces_excess=False,
-        remove_characters_excess=False
+        remove_table_excess=False,
+        remove_whitespaces_excess=False
     )
 
 
@@ -34,15 +35,15 @@ def test_rst_init_parser():
 def test_rst_parser_initialization_with_custom_options():
     """Test RstParser initialization with custom options."""
     parser = RstParser(
+        remove_characters_excess=False,
+        remove_directives=False,
         remove_hyperlinks=False,
         remove_images=False,
-        remove_table_excess=False,
         remove_interpreters=False,
-        remove_directives=False,
-        remove_whitespaces_excess=False,
-        remove_characters_excess=False
+        remove_table_excess=False,
+        remove_whitespaces_excess=False
     )
-    
+
     assert not parser._remove_hyperlinks
     assert not parser._remove_images
     assert not parser._remove_table_excess

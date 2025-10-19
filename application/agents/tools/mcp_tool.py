@@ -261,10 +261,10 @@ class MCPTool(Tool):
                 finally:
                     loop.close()
         except Exception as e:
-            print(f"Error occurred while running async operation: {e}")
+            logger.error("Error occurred while running async operation: %s", e)
             raise
 
-    def discover_tools(self) -> List[Dict]:
+    def discover_tools(self) -> list[dict]:
         """
         Discover available tools from the MCP server using FastMCP.
 
@@ -280,7 +280,7 @@ class MCPTool(Tool):
             self.available_tools = tools
             return self.available_tools
         except Exception as e:
-            raise Exception(f"Failed to discover tools from MCP server: {str(e)}")
+            raise Exception(f"Failed to discover tools from MCP server: {e}")
 
     def execute_action(self, action_name: str, **kwargs) -> Any:
         """
@@ -308,9 +308,12 @@ class MCPTool(Tool):
             )
             return self._format_result(result)
         except Exception as e:
-            raise Exception(f"Failed to execute action '{action_name}': {str(e)}")
+            logger.error(
+                "Failed to execute action '%s': %s", action_name, e, exc_info=True
+            )
+            raise
 
-    def _format_result(self, result) -> Dict:
+    def _format_result(self, result) -> dict:
         """Format FastMCP result to match expected format."""
         if hasattr(result, "content"):
             content_list = []
@@ -327,10 +330,9 @@ class MCPTool(Tool):
                 "content": content_list,
                 "isError": getattr(result, "isError", False),
             }
-        else:
-            return result
+        return result
 
-    def test_connection(self) -> Dict:
+    def test_connection(self) -> dict:
         """
         Test the connection to the MCP server and validate functionality.
 
@@ -354,21 +356,23 @@ class MCPTool(Tool):
             else:
                 return self._test_regular_connection()
         except Exception as e:
+            logger.error("Connection failed: %s", e, exc_info=True)
             return {
                 "success": False,
-                "message": f"Connection failed: {str(e)}",
+                "message": f"Connection failed: {e}",
                 "tools_count": 0,
                 "transport_type": self.transport_type,
                 "auth_type": self.auth_type,
                 "error_type": type(e).__name__,
             }
 
-    def _test_regular_connection(self) -> Dict:
+    def _test_regular_connection(self) -> dict:
         """Test connection for non-OAuth auth types."""
         try:
             self._run_async_operation("ping")
             ping_success = True
-        except Exception:
+        except Exception as e:
+            logger.warning("Ping failed, continuing with discovery: %s", e)
             ping_success = False
         tools = self.discover_tools()
 
@@ -385,7 +389,7 @@ class MCPTool(Tool):
             "tools": [tool.get("name", "unknown") for tool in tools],
         }
 
-    def _test_oauth_connection(self) -> Dict:
+    def _test_oauth_connection(self) -> dict:
         """Test connection for OAuth auth type with proper async handling."""
         try:
             task = mcp_oauth_task.delay(config=self.config, user=self.user_id)
@@ -399,16 +403,17 @@ class MCPTool(Tool):
                 "message": "OAuth flow started",
             }
         except Exception as e:
+            logger.error("OAuth connection failed: %s", e, exc_info=True)
             return {
                 "success": False,
-                "message": f"OAuth connection failed: {str(e)}",
+                "message": f"OAuth connection failed: {e}",
                 "tools_count": 0,
                 "transport_type": self.transport_type,
                 "auth_type": self.auth_type,
                 "error_type": type(e).__name__,
             }
 
-    def get_actions_metadata(self) -> List[Dict]:
+    def get_actions_metadata(self) -> list[dict]:
         """
         Get metadata for all available actions.
 
@@ -452,7 +457,7 @@ class MCPTool(Tool):
             actions.append(action)
         return actions
 
-    def get_config_requirements(self) -> Dict:
+    def get_config_requirements(self) -> dict:
         """Get configuration requirements for the MCP tool."""
         return {
             "server_url": {
@@ -755,7 +760,7 @@ class DBTokenStorage(TokenStorage):
             tokens = OAuthToken.model_validate(doc["tokens"])
             return tokens
         except ValidationError as e:
-            logging.error(f"Could not load tokens: {e}")
+            logger.error("Could not load tokens: %s", e, exc_info=True)
             return None
 
     async def set_tokens(self, tokens: OAuthToken) -> None:
@@ -765,7 +770,7 @@ class DBTokenStorage(TokenStorage):
             {"$set": {"tokens": tokens.model_dump()}},
             True,
         )
-        logging.info(f"Saved tokens for {self.get_base_url(self.server_url)}")
+        logger.info("Saved tokens for %s", self.get_base_url(self.server_url))
 
     async def get_client_info(self) -> OAuthClientInformationFull | None:
         doc = await asyncio.to_thread(self.collection.find_one, self.get_db_key())
@@ -775,7 +780,7 @@ class DBTokenStorage(TokenStorage):
             client_info = OAuthClientInformationFull.model_validate(doc["client_info"])
             tokens = await self.get_tokens()
             if tokens is None:
-                logging.debug(
+                logger.debug(
                     "No tokens found, clearing client info to force fresh registration."
                 )
                 await asyncio.to_thread(
@@ -786,7 +791,7 @@ class DBTokenStorage(TokenStorage):
                 return None
             return client_info
         except ValidationError as e:
-            logging.error(f"Could not load client info: {e}")
+            logger.error("Could not load client info: %s", e, exc_info=True)
             return None
 
     def _serialize_client_info(self, info: dict) -> dict:
@@ -802,17 +807,17 @@ class DBTokenStorage(TokenStorage):
             {"$set": {"client_info": serialized_info}},
             True,
         )
-        logging.info(f"Saved client info for {self.get_base_url(self.server_url)}")
+        logger.info("Saved client info for %s", self.get_base_url(self.server_url))
 
     async def clear(self) -> None:
         await asyncio.to_thread(self.collection.delete_one, self.get_db_key())
-        logging.info(f"Cleared OAuth cache for {self.get_base_url(self.server_url)}")
+        logger.info("Cleared OAuth cache for %s", self.get_base_url(self.server_url))
 
     @classmethod
     async def clear_all(cls, db_client) -> None:
         collection = db_client["connector_sessions"]
         await asyncio.to_thread(collection.delete_many, {})
-        logging.info("Cleared all OAuth client cache data.")
+        logger.info("Cleared all OAuth client cache data.")
 
 
 class MCPOAuthManager:
@@ -838,11 +843,11 @@ class MCPOAuthManager:
         """
         try:
             if not self.redis_client or not state:
-                raise Exception("Redis client or state not provided")
+                raise ValueError("Redis client or state not provided")
             if error:
                 error_key = f"{self.redis_prefix}error:{state}"
                 self.redis_client.setex(error_key, 300, error)
-                raise Exception(f"OAuth error received: {error}")
+                raise ValueError(f"OAuth error received: {error}")
             code_key = f"{self.redis_prefix}code:{state}"
             self.redis_client.setex(code_key, 300, code)
 
@@ -851,7 +856,7 @@ class MCPOAuthManager:
 
             return True
         except Exception as e:
-            logging.error(f"Error handling OAuth callback: {e}")
+            logger.error("Error handling OAuth callback: %s", e, exc_info=True)
             return False
 
     def get_oauth_status(self, task_id: str) -> Dict[str, Any]:

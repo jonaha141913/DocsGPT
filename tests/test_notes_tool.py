@@ -1,11 +1,12 @@
-import pytest
 from application.agents.tools.notes import NotesTool
 from application.core.settings import settings
 
+import pytest
+
 
 @pytest.fixture
-def notes_tool(monkeypatch) -> NotesTool:
-    """Provide a NotesTool with a fake Mongo collection and fixed user_id."""
+def _make_fake_collection():
+    """Build a fake MongoDB collection used across tests."""
 
     class FakeCollection:
         def __init__(self) -> None:
@@ -41,15 +42,22 @@ def notes_tool(monkeypatch) -> NotesTool:
                 return type("res", (), {"deleted_count": 1})
             return type("res", (), {"deleted_count": 0})
 
-    fake_collection = FakeCollection()
-    fake_db = {"notes": fake_collection}
+    return FakeCollection()
+
+
+def _patch_mongo_client(monkeypatch, collection):
+    """Patch the MongoDB client used by NotesTool for a single test."""
+    fake_db = {"notes": collection}
     fake_client = {settings.MONGO_DB_NAME: fake_db}
-
-    # Patch MongoDB client globally for the tool
-
     monkeypatch.setattr(
         "application.core.mongo_db.MongoDB.get_client", lambda: fake_client
     )
+
+
+def notes_tool(monkeypatch) -> NotesTool:
+    """Provide a NotesTool with a fake Mongo collection and fixed user_id."""
+    collection = _make_fake_collection()
+    _patch_mongo_client(monkeypatch, collection)
 
     # Return tool with a fixed tool_id for consistency in tests
 
@@ -147,17 +155,8 @@ def test_insert_line(notes_tool: NotesTool) -> None:
 
 @pytest.mark.unit
 def test_delete_nonexistent_note(monkeypatch):
-    class FakeResult:
-        deleted_count = 0
-
-    class FakeCollection:
-        def delete_one(self, *args, **kwargs):
-            return FakeResult()
-
-    monkeypatch.setattr(
-        "application.core.mongo_db.MongoDB.get_client",
-        lambda: {"docsgpt": {"notes": FakeCollection()}},
-    )
+    collection = _make_fake_collection()
+    _patch_mongo_client(monkeypatch, collection)
 
     notes_tool = NotesTool(tool_config={}, user_id="user123")
     result = notes_tool.execute_action("delete")
@@ -167,37 +166,8 @@ def test_delete_nonexistent_note(monkeypatch):
 @pytest.mark.unit
 def test_notes_tool_isolation(monkeypatch) -> None:
     """Test that different notes tool instances have isolated notes."""
-
-    class FakeCollection:
-        def __init__(self) -> None:
-            self.docs = {}
-
-        def update_one(self, q, u, upsert=False):
-            user_id = q.get("user_id")
-            tool_id = q.get("tool_id")
-            key = f"{user_id}:{tool_id}"
-
-            if key not in self.docs and not upsert:
-                return type("res", (), {"modified_count": 0})
-            if key not in self.docs and upsert:
-                self.docs[key] = {"user_id": user_id, "tool_id": tool_id, "note": ""}
-            if "$set" in u and "note" in u["$set"]:
-                self.docs[key]["note"] = u["$set"]["note"]
-            return type("res", (), {"modified_count": 1})
-
-        def find_one(self, q):
-            user_id = q.get("user_id")
-            tool_id = q.get("tool_id")
-            key = f"{user_id}:{tool_id}"
-            return self.docs.get(key)
-
-    fake_collection = FakeCollection()
-    fake_db = {"notes": fake_collection}
-    fake_client = {settings.MONGO_DB_NAME: fake_db}
-
-    monkeypatch.setattr(
-        "application.core.mongo_db.MongoDB.get_client", lambda: fake_client
-    )
+    collection = _make_fake_collection()
+    _patch_mongo_client(monkeypatch, collection)
 
     # Create two notes tools with different tool_ids for the same user
 
@@ -227,21 +197,8 @@ def test_notes_tool_isolation(monkeypatch) -> None:
 @pytest.mark.unit
 def test_notes_tool_auto_generates_tool_id(monkeypatch) -> None:
     """Test that tool_id defaults to 'default_{user_id}' for persistence."""
-
-    class FakeCollection:
-        def __init__(self) -> None:
-            self.docs = {}
-
-        def update_one(self, q, u, upsert=False):
-            return type("res", (), {"modified_count": 1})
-
-    fake_collection = FakeCollection()
-    fake_db = {"notes": fake_collection}
-    fake_client = {settings.MONGO_DB_NAME: fake_db}
-
-    monkeypatch.setattr(
-        "application.core.mongo_db.MongoDB.get_client", lambda: fake_client
-    )
+    collection = _make_fake_collection()
+    _patch_mongo_client(monkeypatch, collection)
 
     # Create two tools without providing tool_id for the same user
 
