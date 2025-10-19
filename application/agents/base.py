@@ -1,7 +1,7 @@
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, List, Optional
+from typing import Generator
 
 from bson.objectid import ObjectId
 
@@ -41,12 +41,12 @@ class BaseAgent(ABC):
         self.api_key = api_key
         self.user_api_key = user_api_key
         self.prompt = prompt
-        self.decoded_token = decoded_token or {}
+        self.decoded_token = decoded_token if decoded_token is not None else {}
         self.user: str = self.decoded_token.get("sub")
-        self.tool_config: Dict = {}
-        self.tools: List[Dict] = []
-        self.tool_calls: List[Dict] = []
-        self.chat_history: List[Dict] = chat_history if chat_history is not None else []
+        self.tool_config: dict = {}
+        self.tools: list[dict] = []
+        self.tool_calls: list[dict] = []
+        self.chat_history: list[dict] = chat_history if chat_history is not None else []
         self.llm = LLMCreator.create_llm(
             llm_name,
             api_key=api_key,
@@ -56,7 +56,7 @@ class BaseAgent(ABC):
         self.llm_handler = LLMHandlerCreator.create_handler(
             llm_name if llm_name else "default"
         )
-        self.attachments = attachments or []
+        self.attachments: list[dict] = attachments if attachments is not None else []
         self.json_schema = json_schema
         self.limited_token_mode = limited_token_mode
         self.token_limit = token_limit
@@ -276,8 +276,8 @@ class BaseAgent(ABC):
         self,
         system_prompt: str,
         query: str,
-        retrieved_data: List[Dict],
-    ) -> List[Dict]:
+        retrieved_data: list[dict],
+    ) -> list[dict]:
         docs_with_filenames = []
         for doc in retrieved_data:
             filename = doc.get("filename") or doc.get("title") or doc.get("source")
@@ -326,15 +326,15 @@ class BaseAgent(ABC):
         self,
         retriever: BaseRetriever,
         query: str,
-        log_context: Optional[LogContext] = None,
-    ) -> List[Dict]:
+        log_context: LogContext | None = None,
+    ) -> list[dict]:
         retrieved_data = retriever.search(query)
         if log_context:
             data = build_stack_data(retriever, exclude_attributes=["llm"])
             log_context.stacks.append({"component": "retriever", "data": data})
         return retrieved_data
 
-    def _llm_gen(self, messages: List[Dict], log_context: Optional[LogContext] = None):
+    def _llm_gen(self, messages: list[dict], log_context: LogContext | None = None):
         gen_kwargs = {"model": self.gpt_model, "messages": messages}
 
         if (
@@ -368,10 +368,10 @@ class BaseAgent(ABC):
     def _llm_handler(
         self,
         resp,
-        tools_dict: Dict,
-        messages: List[Dict],
-        log_context: Optional[LogContext] = None,
-        attachments: Optional[List[Dict]] = None,
+        tools_dict: dict,
+        messages: list[dict],
+        log_context: LogContext | None = None,
+        attachments: list[dict] | None = None,
     ):
         resp = self.llm_handler.process_message_flow(
             self, resp, tools_dict, messages, attachments, True

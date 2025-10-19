@@ -1,7 +1,9 @@
 """Base storage class for file system abstraction."""
 
 from abc import ABC, abstractmethod
-from typing import BinaryIO, List, Callable
+from typing import BinaryIO, Callable
+
+from typing import list
 
 
 class BaseStorage(ABC):
@@ -22,7 +24,7 @@ class BaseStorage(ABC):
                 - 'storage_type': The type of storage (e.g., 'local', 's3')
                 - Other storage-specific metadata (e.g., 'uri', 'bucket_name', etc.)
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def get_file(self, path: str) -> BinaryIO:
@@ -35,7 +37,7 @@ class BaseStorage(ABC):
         Returns:
             BinaryIO: File-like object containing the file data
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def process_file(self, path: str, processor_func: Callable, **kwargs):
@@ -53,7 +55,7 @@ class BaseStorage(ABC):
         Returns:
             The result of the processor function
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def delete_file(self, path: str) -> bool:
@@ -66,7 +68,7 @@ class BaseStorage(ABC):
         Returns:
             bool: True if deletion was successful
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def file_exists(self, path: str) -> bool:
@@ -79,10 +81,10 @@ class BaseStorage(ABC):
         Returns:
             bool: True if the file exists
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
-    def list_files(self, directory: str) -> List[str]:
+    def list_files(self, directory: str) -> list[str]:
         """
         List all files in a directory.
 
@@ -90,9 +92,9 @@ class BaseStorage(ABC):
             directory: Directory path to list
 
         Returns:
-            List[str]: List of file paths
+            list[str]: List of file paths
         """
-        pass
+        raise NotImplementedError
         
     @abstractmethod
     def is_directory(self, path: str) -> bool:
@@ -105,7 +107,7 @@ class BaseStorage(ABC):
         Returns:
             bool: True if the path is a directory
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def remove_directory(self, directory: str) -> bool:
@@ -121,4 +123,4 @@ class BaseStorage(ABC):
         Returns:
             bool: True if removal was successful, False otherwise
         """
-        pass
+        raise NotImplementedError

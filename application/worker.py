@@ -270,7 +270,7 @@ def ingest_worker(
                         file_data = storage.get_file(storage_file_path)
                         with open(local_file_path, "wb") as f:
                             f.write(file_data.read())
-                    except Exception as e:
+                    except (IOError, OSError) as e:
                         logging.error(
                             f"Error downloading file {storage_file_path}: {e}"
                         )
@@ -348,7 +348,7 @@ def ingest_worker(
 
             upload_index(vector_store_path, file_data)
         except Exception as e:
-            logging.error(f"Error in ingest_worker: {e}", exc_info=True)
+            logger.error(f"Error in ingest_worker: {e}", exc_info=True)
             raise
     return {
         "directory": directory,
@@ -412,7 +412,7 @@ def reingest_source_worker(self, source_id, user):
                         file_data = storage.get_file(storage_file_path)
                         with open(local_file_path, "wb") as f:
                             f.write(file_data.read())
-                    except Exception as e:
+                    except (IOError, OSError) as e:
                         logging.error(
                             f"Error downloading file {storage_file_path}: {e}"
                         )
@@ -488,8 +488,8 @@ def reingest_source_worker(self, source_id, user):
                 else:
                     logging.info("No files removed since last ingest.")
 
-            except Exception as e:
-                logging.error(
+            except (json.JSONDecodeError, TypeError) as e:
+                logger.error(
                     f"Error comparing directory structures: {e}", exc_info=True
                 )
                 added_files = []
@@ -537,8 +537,8 @@ def reingest_source_worker(self, source_id, user):
                                         vector_store.delete_chunk(cid)
                                         deleted += 1
                                     except Exception as de:
-                                        logging.error(
-                                            f"Failed deleting chunk {cid}: {de}"
+                                        logger.exception(
+                                            f"Failed deleting chunk {cid}"
                                         )
                         logging.info(
                             f"Deleted {deleted} chunks from {len(removed_files)} removed files"
@@ -642,7 +642,7 @@ def reingest_source_worker(self, source_id, user):
                         {
                             "$set": {
                                 "directory_structure": directory_structure,
-                                "date": datetime.datetime.now(),
+                                "date": datetime.datetime.now(datetime.timezone.utc),
                                 "tokens": total_tokens,
                             }
                         },
@@ -707,14 +707,14 @@ def remote_worker(
         docs = chunker.chunk(documents=raw_docs)
         docs = [Document.to_langchain_format(raw_doc) for raw_doc in raw_docs]
         tokens = count_tokens_docs(docs)
-        logging.info("Total tokens calculated: %d", tokens)
+        logger.info("Total tokens calculated: %d", tokens)
 
         if operation_mode == "upload":
-            id = ObjectId()
-            embed_and_store_documents(docs, full_path, id, self)
+            doc_id = ObjectId()
+            embed_and_store_documents(docs, full_path, doc_id, self)
         elif operation_mode == "sync":
             if not doc_id or not ObjectId.is_valid(doc_id):
-                logging.error("Invalid doc_id provided for sync operation: %s", doc_id)
+                logger.error("Invalid doc_id provided for sync operation: %s", doc_id)
                 raise ValueError("doc_id must be provided for sync operation.")
             id = ObjectId(doc_id)
             embed_and_store_documents(docs, full_path, id, self)
@@ -775,7 +775,7 @@ def sync(
             doc_id,
         )
     except Exception as e:
-        logging.error(f"Error during sync: {e}", exc_info=True)
+        logger.error(f"Error during sync: {e}", exc_info=True)
         return {"status": "error", "error": str(e)}
     return {"status": "success"}
 
@@ -856,12 +856,12 @@ def attachment_worker(self, file_info, user):
                 "content": content,
                 "token_count": token_count,
                 "mime_type": mime_type,
-                "date": datetime.datetime.now(),
+                "date": datetime.datetime.now(datetime.timezone.utc),
                 "metadata": metadata,
             }
         )
 
-        logging.info(
+        logger.info(
             f"Stored attachment with ID: {attachment_id}", extra={"user": user}
         )
 
@@ -876,10 +876,9 @@ def attachment_worker(self, file_info, user):
             "metadata": metadata,
         }
     except Exception as e:
-        logging.error(
-            f"Error processing file {filename}: {e}",
+        logger.exception(
+            f"Error processing file {filename}",
             extra={"user": user},
-            exc_info=True,
         )
         raise
 
@@ -908,20 +907,20 @@ def agent_webhook_worker(self, agent_id, payload):
             raise ValueError(f"Agent with ID {agent_id} not found.")
         input_data = json.dumps(payload)
     except Exception as e:
-        logging.error(f"Error processing agent webhook: {e}", exc_info=True)
+        logger.exception(f"Error processing agent webhook")
         return {"status": "error", "error": str(e)}
     self.update_state(state="PROGRESS", meta={"current": 50})
     try:
         result = run_agent_logic(agent_config, input_data)
     except Exception as e:
-        logging.error(f"Error running agent logic: {e}", exc_info=True)
+        logger.exception(f"Error running agent logic")
         return {"status": "error", "error": str(e)}
     finally:
         self.update_state(state="PROGRESS", meta={"current": 100})
-        logging.info(
+        logger.info(
             f"Webhook processed for agent {agent_id}", extra={"agent_id": agent_id}
         )
-        return {"status": "success", "result": result}
+    return {"status": "success", "result": result}
 
 
 def ingest_connector(
@@ -937,7 +936,7 @@ def ingest_connector(
     operation_mode: str = "upload",
     doc_id=None,
     sync_frequency: str = "never",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Ingestion for internal knowledge bases (GoogleDrive, etc.).
 
@@ -1101,9 +1100,9 @@ def ingest_connector(
             }
 
             if operation_mode == "sync":
-                file_data["last_sync"] = datetime.datetime.now()
+                file_data["last_sync"] = datetime.datetime.now(datetime.timezone.utc)
             else:
-                file_data["last_sync"] = datetime.datetime.now()
+                file_data["last_sync"] = datetime.datetime.now(datetime.timezone.utc)
 
             upload_index(vector_store_path, file_data)
 
@@ -1128,23 +1127,23 @@ def ingest_connector(
             raise
 
 
-def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, Any]:
+def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> dict[str, Any]:
     """Worker to handle MCP OAuth flow asynchronously."""
 
-    logging.info(
+    logger.info(
         "[MCP OAuth] Worker started for user_id=%s, config=%s", user_id, config
     )
     try:
-        import asyncio
-
         from application.agents.tools.mcp_tool import MCPTool
 
+        import asyncio
+
         task_id = self.request.id
-        logging.info("[MCP OAuth] Task ID: %s", task_id)
+        logger.info("[MCP OAuth] Task ID: %s", task_id)
         redis_client = get_redis_instance()
 
-        def update_status(status_data: Dict[str, Any]):
-            logging.info("[MCP OAuth] Updating status: %s", status_data)
+        def update_status(status_data: dict[str, Any]):
+            logger.info("[MCP OAuth] Updating status: %s", status_data)
             status_key = f"mcp_oauth_status:{task_id}"
             redis_client.setex(status_key, 600, json.dumps(status_data))
 
@@ -1158,7 +1157,7 @@ def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, An
 
         tool_config = config.copy()
         tool_config["oauth_task_id"] = task_id
-        logging.info("[MCP OAuth] Initializing MCPTool with config: %s", tool_config)
+        logger.info("[MCP OAuth] Initializing MCPTool with config: %s", tool_config)
         mcp_tool = MCPTool(tool_config, user_id)
 
         async def run_oauth_discovery():
@@ -1178,20 +1177,20 @@ def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, An
         asyncio.set_event_loop(loop)
 
         try:
-            logging.info("[MCP OAuth] Starting event loop for OAuth discovery...")
+            logger.info("[MCP OAuth] Starting event loop for OAuth discovery...")
             tools_response = loop.run_until_complete(run_oauth_discovery())
-            logging.info(
+            logger.info(
                 "[MCP OAuth] Tools response after async call: %s", tools_response
             )
 
             status_key = f"mcp_oauth_status:{task_id}"
             redis_status = redis_client.get(status_key)
             if redis_status:
-                logging.info(
+                logger.info(
                     "[MCP OAuth] Redis status after async call: %s", redis_status
                 )
             else:
-                logging.warning(
+                logger.warning(
                     "[MCP OAuth] No Redis status found after async call for key: %s",
                     status_key,
                 )
@@ -1207,14 +1206,14 @@ def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, An
                 }
             )
 
-            logging.info(
+            logger.info(
                 "[MCP OAuth] OAuth flow completed successfully for task_id=%s", task_id
             )
             return {"success": True, "tools": tools, "tools_count": len(tools)}
         except Exception as e:
             error_msg = f"OAuth flow failed: {str(e)}"
-            logging.error(
-                "[MCP OAuth] Exception in OAuth discovery: %s", error_msg, exc_info=True
+            logger.exception(
+                "[MCP OAuth] Exception in OAuth discovery"
             )
             update_status(
                 {
@@ -1226,12 +1225,12 @@ def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, An
             )
             return {"success": False, "error": error_msg}
         finally:
-            logging.info("[MCP OAuth] Closing event loop for task_id=%s", task_id)
+            logger.info("[MCP OAuth] Closing event loop for task_id=%s", task_id)
             loop.close()
     except Exception as e:
         error_msg = f"Failed to initialize OAuth flow: {str(e)}"
-        logging.error(
-            "[MCP OAuth] Exception during initialization: %s", error_msg, exc_info=True
+        logger.exception(
+            "[MCP OAuth] Exception during initialization"
         )
         update_status(
             {
@@ -1244,7 +1243,7 @@ def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, An
         return {"success": False, "error": error_msg}
 
 
-def mcp_oauth_status(self, task_id: str) -> Dict[str, Any]:
+def mcp_oauth_status(self, task_id: str) -> dict[str, Any]:
     """Check the status of an MCP OAuth flow."""
     redis_client = get_redis_instance()
     status_key = f"mcp_oauth_status:{task_id}"

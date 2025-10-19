@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generator
+from typing import Any, Generator
 from unittest.mock import Mock, patch
 
 from application.llm.handlers.base import LLMHandler, LLMResponse, ToolCall
@@ -86,7 +86,7 @@ class ConcreteHandler(LLMHandler):
             raw_response=response,
         )
 
-    def create_tool_message(self, tool_call: ToolCall, result: Any) -> Dict:
+    def create_tool_message(self, tool_call: ToolCall, result: Any) -> dict:
         return {"role": "tool", "content": str(result), "tool_call_id": tool_call.id}
 
     def _iterate_stream(self, response: Any) -> Generator:
@@ -135,9 +135,10 @@ class TestLLMHandler:
         with patch.object(
             handler, "_append_unsupported_attachments", return_value=messages
         ) as mock_append:
-            result = handler.prepare_messages(mock_agent, messages, attachments)
-            mock_append.assert_called_once_with(messages, attachments)
-            assert result == messages
+            with patch.object(handler, "prepare_messages_with_attachments", return_value=messages):
+                result = handler.prepare_messages(mock_agent, messages, attachments)
+                mock_append.assert_called_once_with(messages, attachments)
+                assert result == messages
 
     def test_prepare_messages_mixed_attachments(self):
         handler = ConcreteHandler()
@@ -154,11 +155,12 @@ class TestLLMHandler:
         with patch.object(
             handler, "_append_unsupported_attachments", return_value=messages
         ) as mock_append:
-            result = handler.prepare_messages(mock_agent, messages, attachments)
+            with patch.object(handler, "prepare_messages_with_attachments", return_value=messages):
+                result = handler.prepare_messages(mock_agent, messages, attachments)
 
-            mock_agent.llm.prepare_messages_with_attachments.assert_called_once()
-            mock_append.assert_called_once()
-            assert result == messages
+                mock_agent.llm.prepare_messages_with_attachments.assert_called_once()
+                mock_append.assert_called_once()
+                assert result == messages
 
     def test_process_message_flow_non_streaming(self):
         handler = ConcreteHandler()

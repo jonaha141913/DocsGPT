@@ -2,7 +2,6 @@ import logging
 from abc import ABC, abstractmethod
 
 from application.cache import gen_cache, stream_cache
-
 from application.core.settings import settings
 from application.usage import gen_token_usage, stream_token_usage
 
@@ -12,10 +11,10 @@ logger = logging.getLogger(__name__)
 class BaseLLM(ABC):
     def __init__(
         self,
-        decoded_token=None,
+        decoded_token: Any | None = None,
     ):
         self.decoded_token = decoded_token
-        self.token_usage = {"prompt_tokens": 0, "generated_tokens": 0}
+        self.token_usage: dict[str, int] = {"prompt_tokens": 0, "generated_tokens": 0}
         self.fallback_provider = settings.FALLBACK_LLM_PROVIDER
         self.fallback_model_name = settings.FALLBACK_LLM_NAME
         self.fallback_llm_api_key = settings.FALLBACK_LLM_API_KEY
@@ -38,9 +37,9 @@ class BaseLLM(ABC):
                     None,
                     self.decoded_token,
                 )
-            except Exception as e:
+            except Exception:
                 logger.error(
-                    f"Failed to initialize fallback LLM: {str(e)}", exc_info=True
+                    "Failed to initialize fallback LLM", exc_info=True
                 )
         return self._fallback_llm
 
@@ -65,12 +64,12 @@ class BaseLLM(ABC):
 
         try:
             return decorated_method()
-        except Exception as e:
+        except Exception:
             if not self.fallback_llm:
-                logger.error(f"Primary LLM failed and no fallback available: {str(e)}")
+                logger.error("Primary LLM failed and no fallback available", exc_info=True)
                 raise
             logger.warning(
-                f"Falling back to {self.fallback_provider}/{self.fallback_model_name}. Error: {str(e)}"
+                f"Falling back to {self.fallback_provider}/{self.fallback_model_name}"
             )
 
             fallback_method = getattr(
@@ -78,7 +77,7 @@ class BaseLLM(ABC):
             )
             return fallback_method(*args, **kwargs)
 
-    def gen(self, model, messages, stream=False, tools=None, *args, **kwargs):
+    def gen(self, model, messages, stream=False, tools=None):
         decorators = [gen_token_usage, gen_cache]
         return self._execute_with_fallback(
             "_raw_gen",
@@ -87,11 +86,9 @@ class BaseLLM(ABC):
             messages=messages,
             stream=stream,
             tools=tools,
-            *args,
-            **kwargs,
         )
 
-    def gen_stream(self, model, messages, stream=True, tools=None, *args, **kwargs):
+    def gen_stream(self, model, messages, stream=True, tools=None):
         decorators = [stream_cache, stream_token_usage]
         return self._execute_with_fallback(
             "_raw_gen_stream",
@@ -100,17 +97,15 @@ class BaseLLM(ABC):
             messages=messages,
             stream=stream,
             tools=tools,
-            *args,
-            **kwargs,
         )
 
     @abstractmethod
-    def _raw_gen(self, model, messages, stream, tools, *args, **kwargs):
-        pass
+    def _raw_gen(self, model, messages, stream, tools):
+        raise NotImplementedError
 
     @abstractmethod
-    def _raw_gen_stream(self, model, messages, stream, *args, **kwargs):
-        pass
+    def _raw_gen_stream(self, model, messages, stream):
+        raise NotImplementedError
 
     def supports_tools(self):
         return hasattr(self, "_supports_tools") and callable(
