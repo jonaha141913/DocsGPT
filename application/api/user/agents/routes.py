@@ -457,7 +457,7 @@ class UpdateAgent(Resource):
                 required=False, description="Token limit for the agent in limited mode"
             ),
             "limited_request_mode": fields.Boolean(
-                require=False,
+                required=False,
                 description="Whether the agent is in limited request mode",
             ),
             "request_limit": fields.Integer(
