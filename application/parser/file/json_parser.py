@@ -29,13 +29,15 @@ class JSONParser(BaseParser):
             *args: Any,
             concat_rows: bool = True,
             row_joiner: str = "\n",
-            json_config: dict = {},
+            json_config: dict = None,
             **kwargs: Any
     ) -> None:
         """Init params."""
         super().__init__(*args, **kwargs)
         self._concat_rows = concat_rows
         self._row_joiner = row_joiner
+        if json_config is None:
+            json_config = {}
         self._json_config = json_config
 
     def _init_parser(self) -> Dict:

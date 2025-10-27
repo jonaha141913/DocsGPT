@@ -2,7 +2,7 @@ from application.retriever.classic_rag import ClassicRAG
 
 
 class RetrieverCreator:
-    retrievers = {
+    retrievers: typing.ClassVar[dict[str, type]] = {
         "classic": ClassicRAG,
         "default": ClassicRAG,
     }

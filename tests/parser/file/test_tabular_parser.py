@@ -146,16 +146,14 @@ def test_excel_parser_header_period(excel_parser):
 
 def test_csv_parser_import_error(csv_parser):
     import sys
-    with patch.dict(sys.modules, {"csv": None}):
-        with pytest.raises(ValueError, match="csv module is required to read CSV files"):
-            csv_parser.parse_file(Path("test.csv"))
+    with patch.dict(sys.modules, {"csv": None}), pytest.raises(ValueError, match="csv module is required to read CSV files"):
+        csv_parser.parse_file(Path("test.csv"))
 
 
 def test_pandas_csv_parser_import_error(pandas_csv_parser):
     import sys
-    with patch.dict(sys.modules, {"pandas": None}):
-        with pytest.raises(ValueError, match="pandas module is required to read CSV files"):
-            pandas_csv_parser.parse_file(Path("test.csv"))
+    with patch.dict(sys.modules, {"pandas": None}), pytest.raises(ValueError, match="pandas module is required to read CSV files"):
+        pandas_csv_parser.parse_file(Path("test.csv"))
 
 
 def test_pandas_csv_parser_header_period_zero(pandas_csv_parser):

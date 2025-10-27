@@ -1,7 +1,6 @@
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Union
 
 import yaml
 from bson import ObjectId
@@ -28,7 +27,7 @@ class DatabaseSeeder:
         self.system_user_id = "system"
         self.logger = logging.getLogger(__name__)
 
-    def seed_initial_data(self, config_path: str = None, force=False):
+    def seed_initial_data(self, config_path: str | None = None, force=False):
         """Main entry point for seeding all initial data"""
         if not force and self._is_already_seeded():
             self.logger.info("Database already seeded. Use force=True to reseed.")
@@ -117,6 +116,8 @@ class DatabaseSeeder:
                     f"Successfully processed agent: {agent_config['name']} (ID: {agent_id})"
                 )
             except Exception as e:
+                # Broad exception handling is necessary here to ensure that a failure
+                # in processing one agent does not halt the seeding of the entire batch.
                 self.logger.error(
                     f"Error processing agent {agent_config['name']}: {str(e)}"
                 )
@@ -161,6 +162,8 @@ class DatabaseSeeder:
             self.logger.info(f"Source ingested successfully: {source_id}")
             return source_id
         except Exception as e:
+            # Broad exception handling is necessary here to catch any unexpected
+            # errors during source ingestion and return a boolean failure indicator.
             self.logger.error(f"Failed to ingest source: {str(e)}")
             return False
 
@@ -200,6 +203,8 @@ class DatabaseSeeder:
                 tool_ids.append(result.inserted_id)
                 self.logger.info(f"Created new tool: {result.inserted_id}")
             except Exception as e:
+                # Broad exception handling is necessary here to ensure that a failure
+                # in processing one tool does not halt the seeding of the entire batch.
                 self.logger.error(f"Failed to process tool {tool_name}: {str(e)}")
                 continue
         return tool_ids
@@ -245,10 +250,12 @@ class DatabaseSeeder:
             return prompt_id
 
         except Exception as e:
+            # Broad exception handling is necessary here to ensure that a failure
+            # in processing a prompt does not halt the seeding of the entire batch.
             self.logger.error(f"Failed to process prompt {prompt_name}: {str(e)}")
             return None
 
-    def _process_config(self, config: Dict) -> Dict:
+    def _process_config(self, config: dict) -> dict:
         """Process config values to replace environment variables"""
         processed = {}
         for key, value in config.items():

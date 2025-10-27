@@ -1,13 +1,12 @@
 import datetime
 import json
 import logging
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Generator, Optional
 
 from flask import jsonify, make_response, Response
 from flask_restx import Namespace
 
 from application.api.answer.services.conversation_service import ConversationService
-
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
 from application.llm.llm_creator import LLMCreator
@@ -31,8 +30,8 @@ class BaseAnswerResource:
         self.conversation_service = ConversationService()
 
     def validate_request(
-        self, data: Dict[str, Any], require_conversation_id: bool = False
-    ) -> Optional[Response]:
+        self, data: dict[str, Any], require_conversation_id: bool = False
+    ) -> Response | None:
         """Common request validation"""
         required_fields = ["question"]
         if require_conversation_id:
@@ -86,7 +85,7 @@ class BaseAnswerResource:
 
         token_usage_collection = self.db["token_usage"]
 
-        end_date = datetime.datetime.now()
+        end_date = datetime.datetime.now(datetime.timezone.utc)
         start_date = end_date - datetime.timedelta(hours=24)
 
         match_query = {
@@ -291,7 +290,7 @@ class BaseAnswerResource:
             data = json.dumps({"type": "end"})
             yield f"data: {data}\n\n"
         except GeneratorExit:
-            logger.info(f"Stream aborted by client for question: {question[:50]}... ")
+            logger.info("Stream aborted by client for question: %s...", question[:50])
             # Save partial response
             if should_save_conversation and response_full:
                 try:
@@ -323,11 +322,11 @@ class BaseAnswerResource:
                     )
                 except Exception as e:
                     logger.error(
-                        f"Error saving partial response: {str(e)}", exc_info=True
+                        "Error saving partial response: %s", str(e), exc_info=True
                     )
             raise
         except Exception as e:
-            logger.error(f"Error in stream: {str(e)}", exc_info=True)
+            logger.error("Error in stream: %s", str(e), exc_info=True)
             data = json.dumps(
                 {
                     "type": "error",
@@ -368,12 +367,12 @@ class BaseAnswerResource:
                 elif event["type"] == "thought":
                     thought = event["thought"]
                 elif event["type"] == "error":
-                    logger.error(f"Error from stream: {event['error']}")
+                    logger.error("Error from stream: %s", event["error"])
                     return None, None, None, None, event["error"]
                 elif event["type"] == "end":
                     stream_ended = True
             except (json.JSONDecodeError, KeyError) as e:
-                logger.warning(f"Error parsing stream event: {e}, line: {line}")
+                logger.warning("Error parsing stream event: %s, line: %s", e, line)
                 continue
         if not stream_ended:
             logger.error("Stream ended unexpectedly without an 'end' event.")

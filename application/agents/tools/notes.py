@@ -1,6 +1,6 @@
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 import uuid
+from datetime import datetime
+from typing import Any, Optional
 
 from .base import Tool
 from application.core.mongo_db import MongoDB
@@ -13,7 +13,7 @@ class NotesTool(Tool):
     Single note. Supports viewing, overwriting, string replacement.
     """
 
-    def __init__(self, tool_config: Optional[Dict[str, Any]] = None, user_id: Optional[str] = None) -> None:
+    def __init__(self, tool_config: dict[str, Any] | None = None, user_id: str | None = None) -> None:
         """Initialize the tool.
 
         Args:
@@ -22,7 +22,7 @@ class NotesTool(Tool):
                            This ensures each user's tool configuration has isolated notes
             user_id: The authenticated user's id (should come from decoded_token["sub"]).
         """
-        self.user_id: Optional[str] = user_id
+        self.user_id: str | None = user_id
 
         # Get tool_id from configuration (passed from user_tools._id in production)
         # In production, tool_id is the MongoDB ObjectId string from user_tools collection
@@ -41,7 +41,7 @@ class NotesTool(Tool):
     # -----------------------------
     # Action implementations
     # -----------------------------
-    def execute_action(self, action_name: str, **kwargs: Any) -> str:
+    def execute_action(self, action_name: str, **kwargs: Any) -> str | None:
         """Execute an action by name.
 
         Args:
@@ -71,7 +71,7 @@ class NotesTool(Tool):
 
         return f"Unknown action: {action_name}"
 
-    def get_actions_metadata(self) -> List[Dict[str, Any]]:
+    def get_actions_metadata(self) -> list[dict[str, Any]]:
         """Return JSON metadata describing supported actions for tool schemas."""
         return [
             {
@@ -121,7 +121,7 @@ class NotesTool(Tool):
             },
         ]
 
-    def get_config_requirements(self) -> Dict[str, Any]:
+    def get_config_requirements(self) -> dict[str, Any]:
         """Return configuration requirements (none for now)."""
         return {}
 

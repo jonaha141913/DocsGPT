@@ -57,7 +57,7 @@ class CombinedJson(Resource):
                         ),  # Add type field with default "file"
                     }
                 )
-        except Exception as err:
+        except (ValueError, TypeError, KeyError) as err:
             current_app.logger.error(f"Error retrieving sources: {err}", exc_info=True)
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(data), 200)
@@ -127,7 +127,7 @@ class PaginatedSources(Resource):
                 "paginated": paginated_docs,
             }
             return make_response(jsonify(response), 200)
-        except Exception as err:
+        except (ValueError, TypeError, KeyError) as err:
             current_app.logger.error(
                 f"Error retrieving paginated sources: {err}", exc_info=True
             )
@@ -150,7 +150,7 @@ class DeleteByIds(Resource):
             result = sources_collection.delete_index(ids=ids)
             if result:
                 return make_response(jsonify({"success": True}), 200)
-        except Exception as err:
+        except (ValueError, TypeError, KeyError) as err:
             current_app.logger.error(f"Error deleting indexes: {err}", exc_info=True)
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"success": False}), 400)
@@ -202,7 +202,7 @@ class DeleteOldIndexes(Resource):
                     storage.delete_file(file_path)
         except FileNotFoundError:
             pass
-        except Exception as err:
+        except (ValueError, TypeError, KeyError) as err:
             current_app.logger.error(
                 f"Error deleting files and indexes: {err}", exc_info=True
             )
@@ -261,7 +261,7 @@ class ManageSync(Resource):
                 },
                 update_data,
             )
-        except Exception as err:
+        except (ValueError, TypeError, KeyError) as err:
             current_app.logger.error(
                 f"Error updating sync frequency: {err}", exc_info=True
             )
@@ -301,7 +301,7 @@ class DirectoryStructure(Resource):
                 if isinstance(remote_data, str) and remote_data:
                     remote_data_obj = json.loads(remote_data)
                     provider = remote_data_obj.get("provider")
-            except Exception as e:
+            except (ValueError, TypeError) as e:
                 current_app.logger.warning(
                     f"Failed to parse remote_data for doc {doc_id}: {e}"
                 )
@@ -316,7 +316,7 @@ class DirectoryStructure(Resource):
                 ),
                 200,
             )
-        except Exception as e:
+        except (ValueError, TypeError, KeyError) as e:
             current_app.logger.error(
                 f"Error retrieving directory structure: {e}", exc_info=True
             )

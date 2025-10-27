@@ -1,11 +1,11 @@
 import base64
+import mimetypes
 import requests
 import time
-from typing import List, Optional
+from application.core.settings import settings
 from application.parser.remote.base import BaseRemote
 from application.parser.schema.base import Document
-import mimetypes
-from application.core.settings import settings
+from typing import List, Optional
 
 class GitHubLoader(BaseRemote):
     def __init__(self):
@@ -61,7 +61,7 @@ class GitHubLoader(BaseRemote):
                     if not decoded_content:
                         return None
                     return decoded_content
-                except Exception:
+                except (base64.binascii.Error, UnicodeDecodeError):
                     # If decoding fails, it's probably a binary file
                     return None
             else:
@@ -106,9 +106,7 @@ class GitHubLoader(BaseRemote):
                         raise Exception(f"GitHub API rate limit exceeded. Please set GITHUB_ACCESS_TOKEN environment variable. Reset time: {reset_time}")
                     else:
                         raise Exception(f"GitHub API error: {error_msg}. This may require authentication - set GITHUB_ACCESS_TOKEN environment variable.")
-                except Exception as e:
-                    if isinstance(e, Exception) and "GitHub API" in str(e):
-                        raise
+                except (ValueError, KeyError):
                     # If we can't parse the response, raise the original error
                     response.raise_for_status()
             else:

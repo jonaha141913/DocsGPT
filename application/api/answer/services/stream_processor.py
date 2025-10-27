@@ -3,10 +3,9 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from bson.dbref import DBRef
-
 from bson.objectid import ObjectId
 
 from application.agents.agent_creator import AgentCreator
@@ -135,7 +134,7 @@ class StreamProcessor:
 
                 if attachment_doc:
                     attachments.append(attachment_doc)
-            except Exception as e:
+            except (ValueError, TypeError) as e:
                 logger.error(
                     f"Error retrieving attachment {attachment_id}: {e}", exc_info=True
                 )
@@ -148,14 +147,14 @@ class StreamProcessor:
         try:
             agent = self.agents_collection.find_one({"_id": ObjectId(agent_id)})
             if agent is None:
-                raise Exception("Agent not found")
+                raise ValueError("Agent not found")
             is_owner = agent.get("user") == user_id
             is_shared_with_user = agent.get(
                 "shared_publicly", False
             ) or user_id in agent.get("shared_with", [])
 
             if not (is_owner or is_shared_with_user):
-                raise Exception("Unauthorized access to the agent")
+                raise PermissionError("Unauthorized access to the agent")
             if is_owner:
                 self.agents_collection.update_one(
                     {"_id": ObjectId(agent_id)},
@@ -166,7 +165,7 @@ class StreamProcessor:
                     },
                 )
             return str(agent["key"]), not is_owner, agent.get("shared_token")
-        except Exception as e:
+        except (ValueError, PermissionError) as e:
             logger.error(f"Error in get_agent_key: {str(e)}", exc_info=True)
             raise
 
@@ -347,7 +346,7 @@ class StreamProcessor:
             decoded_token=self.decoded_token,
         )
 
-    def pre_fetch_docs(self, question: str) -> tuple[Optional[str], Optional[list]]:
+    def pre_fetch_docs(self, question: str) -> tuple[Optional[str], list[Optional[dict]]] | tuple[None, None]:
         """Pre-fetch documents for template rendering before agent creation"""
         if self.data.get("isNoneDoc", False):
             logger.info("Pre-fetch skipped: isNoneDoc=True")
@@ -382,7 +381,7 @@ class StreamProcessor:
             logger.error(f"Failed to pre-fetch docs: {str(e)}", exc_info=True)
             return None, None
 
-    def pre_fetch_tools(self) -> Optional[Dict[str, Any]]:
+    def pre_fetch_tools(self) -> dict[str, Any] | None:
         """Pre-fetch tool data for template rendering before agent creation
 
         Can be controlled via:
@@ -434,8 +433,8 @@ class StreamProcessor:
             return None
 
     def _fetch_memory_tool_data(
-        self, tool_doc: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, tool_doc: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Fetch memory tool data for pre-injection into prompt"""
         try:
             tool_config = tool_doc.get("config", {}).copy()
@@ -457,9 +456,9 @@ class StreamProcessor:
 
     def create_agent(
         self,
-        docs_together: Optional[str] = None,
-        docs: Optional[list] = None,
-        tools_data: Optional[Dict[str, Any]] = None,
+        docs_together: str | None = None,
+        docs: list | None = None,
+        tools_data: dict[str, Any] | None = None,
     ):
         """Create and return the configured agent with rendered prompt"""
         raw_prompt = get_prompt(self.agent_config["prompt_id"], self.prompts_collection)

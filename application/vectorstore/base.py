@@ -2,15 +2,16 @@ import logging
 import os
 from abc import ABC, abstractmethod
 
+from application.core.settings import settings
+
 from langchain_openai import OpenAIEmbeddings
 from sentence_transformers import SentenceTransformer
-
-from application.core.settings import settings
 
 
 class EmbeddingsWrapper:
     def __init__(self, model_name, *args, **kwargs):
-        logging.info(f"Initializing EmbeddingsWrapper with model: {model_name}")
+        logger = logging.getLogger(__name__)
+        logger.info(f"Initializing EmbeddingsWrapper with model: {model_name}")
         try:
             kwargs.setdefault("trust_remote_code", True)
             self.model = SentenceTransformer(
@@ -24,9 +25,9 @@ class EmbeddingsWrapper:
                     f"SentenceTransformer model failed to load properly for: {model_name}"
                 )
             self.dimension = self.model.get_sentence_embedding_dimension()
-            logging.info(f"Successfully loaded model with dimension: {self.dimension}")
-        except Exception as e:
-            logging.error(
+            logger.info(f"Successfully loaded model with dimension: {self.dimension}")
+        except (RuntimeError, ValueError) as e:
+            logger.error(
                 f"Failed to initialize SentenceTransformer with model {model_name}: {str(e)}",
                 exc_info=True,
             )
@@ -48,7 +49,7 @@ class EmbeddingsWrapper:
 
 
 class EmbeddingsSingleton:
-    _instances = {}
+    _instances: dict[str, object] = {}
 
     @staticmethod
     def get_instance(embeddings_name, *args, **kwargs):
@@ -113,14 +114,15 @@ class BaseVectorStore(ABC):
         """Delete a specific chunk from the vectorstore"""
         pass
 
-    def is_azure_configured(self):
+    def is_azure_configured(self) -> bool:
         return (
-            settings.OPENAI_API_BASE
-            and settings.OPENAI_API_VERSION
-            and settings.AZURE_DEPLOYMENT_NAME
+            settings.OPENAI_API_BASE is not None
+            and settings.OPENAI_API_VERSION is not None
+            and settings.AZURE_DEPLOYMENT_NAME is not None
         )
 
     def _get_embeddings(self, embeddings_name, embeddings_key=None):
+        logger = logging.getLogger(__name__)
         if embeddings_name == "openai_text-embedding-ada-002":
             if self.is_azure_configured():
                 os.environ["OPENAI_API_TYPE"] = "azure"
@@ -140,16 +142,16 @@ class BaseVectorStore(ABC):
             for path in possible_paths:
                 if os.path.exists(path):
                     local_model_path = path
-                    logging.info(f"Found local model at path: {path}")
+                    logger.info(f"Found local model at path: {path}")
                     break
                 else:
-                    logging.info(f"Path does not exist: {path}")
+                    logger.info(f"Path does not exist: {path}")
             if local_model_path:
                 embedding_instance = EmbeddingsSingleton.get_instance(
                     local_model_path,
                 )
             else:
-                logging.warning(
+                logger.warning(
                     f"Local model not found in any of the paths: {possible_paths}. Falling back to HuggingFace download."
                 )
                 embedding_instance = EmbeddingsSingleton.get_instance(

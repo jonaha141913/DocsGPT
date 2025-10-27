@@ -1,7 +1,7 @@
 """Tool management MCP server integration."""
 
 import json
-from email.quoprimime import unquote
+from email.quoparmime import unquote
 
 from bson.objectid import ObjectId
 from flask import current_app, jsonify, make_response, redirect, request
@@ -287,7 +287,7 @@ class MCPOAuthCallback(Resource):
                 return redirect(
                     "/api/connectors/callback-status?status=error&message=OAuth+callback+failed.&provider=mcp_tool"
                 )
-        except Exception as e:
+        except (KeyError, TypeError, ValueError) as e:
             current_app.logger.error(
                 f"Error handling MCP OAuth callback: {str(e)}", exc_info=True
             )
@@ -324,7 +324,7 @@ class MCPOAuthStatus(Resource):
                     ),
                     404,
                 )
-        except Exception as e:
+        except (KeyError, TypeError, ValueError) as e:
             current_app.logger.error(
                 f"Error getting OAuth status for task {task_id}: {str(e)}"
             )
