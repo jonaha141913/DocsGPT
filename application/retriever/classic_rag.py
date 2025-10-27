@@ -7,6 +7,8 @@ from application.retriever.base import BaseRetriever
 from application.utils import num_tokens_from_string
 from application.vectorstore.vector_creator import VectorCreator
 
+logger = logging.getLogger(__name__)
+
 
 class ClassicRAG(BaseRetriever):
     def __init__(
@@ -101,15 +103,15 @@ class ClassicRAG(BaseRetriever):
 
         try:
             rephrased_query = self.llm.gen(model=self.gpt_model, messages=messages)
-            print(f"Rephrased query: {rephrased_query}")
+            logger.info(f"Rephrased query: {rephrased_query}")
             return rephrased_query if rephrased_query else self.original_question
         except Exception as e:
-            logging.error(f"Error rephrasing query: {e}", exc_info=True)
+            logger.error(f"Error rephrasing query: {e}", exc_info=True)
             return self.original_question
 
     def _get_data(self):
         if self.chunks == 0 or not self.vectorstores:
-            logging.info(
+            logger.info(
                 f"ClassicRAG._get_data: Skipping retrieval - chunks={self.chunks}, "
                 f"vectorstores_count={len(self.vectorstores) if self.vectorstores else 0}"
             )
@@ -179,13 +181,13 @@ class ClassicRAG(BaseRetriever):
                         break
 
                 except Exception as e:
-                    logging.error(
+                    logger.error(
                         f"Error searching vectorstore {vectorstore_id}: {e}",
                         exc_info=True,
                     )
                     continue
 
-        logging.info(
+        logger.info(
             f"ClassicRAG._get_data: Retrieval complete - retrieved {len(all_docs)} documents "
             f"(requested chunks={self.chunks}, chunks_per_source={chunks_per_source}, "
             f"cumulative_tokens={cumulative_tokens}/{token_budget})"

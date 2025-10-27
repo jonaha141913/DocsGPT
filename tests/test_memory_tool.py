@@ -1,6 +1,6 @@
-import pytest
 from application.agents.tools.memory import MemoryTool
 from application.core.settings import settings
+import pytest
 
 
 @pytest.fixture
@@ -94,13 +94,13 @@ def memory_tool(monkeypatch) -> MemoryTool:
 
                 pattern = regex_pattern.replace("\\", "").lstrip("^")
 
-                for key, doc in self.docs.items():
+                for doc in self.docs.values():
                     if doc.get("user_id") == user_id and doc.get("tool_id") == tool_id:
                         doc_path = doc.get("path", "")
                         if doc_path.startswith(pattern):
                             results.append(doc)
             else:
-                for key, doc in self.docs.items():
+                for doc in self.docs.values():
                     if doc.get("user_id") == user_id and doc.get("tool_id") == tool_id:
                         results.append(doc)
             return results
@@ -128,11 +128,11 @@ def memory_tool(monkeypatch) -> MemoryTool:
                 pattern = regex_pattern.replace("\\", "").lstrip("^")
 
                 keys_to_delete = []
-                for key, doc in self.docs.items():
+                for doc in self.docs.values():
                     if doc.get("user_id") == user_id and doc.get("tool_id") == tool_id:
                         doc_path = doc.get("path", "")
                         if doc_path.startswith(pattern):
-                            keys_to_delete.append(key)
+                            keys_to_delete.append(doc.get("_id"))
                 for key in keys_to_delete:
                     del self.docs[key]
                     deleted += 1
@@ -140,8 +140,8 @@ def memory_tool(monkeypatch) -> MemoryTool:
                 # Delete all for user and tool
 
                 keys_to_delete = [
-                    key
-                    for key, doc in self.docs.items()
+                    doc.get("_id")
+                    for doc in self.docs.values()
                     if doc.get("user_id") == user_id and doc.get("tool_id") == tool_id
                 ]
                 for key in keys_to_delete:

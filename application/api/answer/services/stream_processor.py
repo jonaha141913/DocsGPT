@@ -3,10 +3,8 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
 
 from bson.dbref import DBRef
-
 from bson.objectid import ObjectId
 
 from application.agents.agent_creator import AgentCreator
@@ -20,6 +18,7 @@ from application.utils import (
     get_gpt_model,
     limit_chat_history,
 )
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -135,9 +134,9 @@ class StreamProcessor:
 
                 if attachment_doc:
                     attachments.append(attachment_doc)
-            except Exception as e:
+            except Exception:
                 logger.error(
-                    f"Error retrieving attachment {attachment_id}: {e}", exc_info=True
+                    f"Error retrieving attachment {attachment_id}", exc_info=True
                 )
         return attachments
 
@@ -148,14 +147,14 @@ class StreamProcessor:
         try:
             agent = self.agents_collection.find_one({"_id": ObjectId(agent_id)})
             if agent is None:
-                raise Exception("Agent not found")
+                raise ValueError("Agent not found")
             is_owner = agent.get("user") == user_id
             is_shared_with_user = agent.get(
                 "shared_publicly", False
             ) or user_id in agent.get("shared_with", [])
 
             if not (is_owner or is_shared_with_user):
-                raise Exception("Unauthorized access to the agent")
+                raise ValueError("Unauthorized access to the agent")
             if is_owner:
                 self.agents_collection.update_one(
                     {"_id": ObjectId(agent_id)},
@@ -166,14 +165,14 @@ class StreamProcessor:
                     },
                 )
             return str(agent["key"]), not is_owner, agent.get("shared_token")
-        except Exception as e:
-            logger.error(f"Error in get_agent_key: {str(e)}", exc_info=True)
+        except Exception:
+            logger.error(f"Error in get_agent_key", exc_info=True)
             raise
 
     def _get_data_from_api_key(self, api_key: str) -> Dict[str, Any]:
         data = self.agents_collection.find_one({"key": api_key})
         if not data:
-            raise Exception("Invalid API Key, please generate a new key", 401)
+            raise ValueError("Invalid API Key, please generate a new key")
         source = data.get("source")
         if isinstance(source, DBRef):
             source_doc = self.db.dereference(source)
@@ -216,7 +215,7 @@ class StreamProcessor:
 
     def _configure_source(self):
         """Configure the source based on agent data"""
-        api_key = self.data.get("api_key") or self.agent_key
+        api_key = self.data.get("api_key")
 
         if api_key:
             agent_data = self._get_data_from_api_key(api_key)
@@ -378,8 +377,8 @@ class StreamProcessor:
             logger.info(f"Pre-fetch docs_together size: {len(docs_together)} chars")
 
             return docs_together, docs
-        except Exception as e:
-            logger.error(f"Failed to pre-fetch docs: {str(e)}", exc_info=True)
+        except Exception:
+            logger.error(f"Failed to pre-fetch docs", exc_info=True)
             return None, None
 
     def pre_fetch_tools(self) -> Optional[Dict[str, Any]]:
@@ -429,8 +428,8 @@ class StreamProcessor:
                         tools_data["memory"] = memory_data
 
             return tools_data if tools_data else None
-        except Exception as e:
-            logger.warning(f"Failed to pre-fetch tools: {str(e)}")
+        except Exception:
+            logger.warning("Failed to pre-fetch tools")
             return None
 
     def _fetch_memory_tool_data(
@@ -451,8 +450,8 @@ class StreamProcessor:
                 return None
 
             return {"root": root_view, "available": True}
-        except Exception as e:
-            logger.warning(f"Failed to fetch memory tool data: {str(e)}")
+        except Exception:
+            logger.warning("Failed to fetch memory tool data")
             return None
 
     def create_agent(

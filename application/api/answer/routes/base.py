@@ -1,13 +1,12 @@
 import datetime
 import json
 import logging
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, Optional
 
 from flask import jsonify, make_response, Response
 from flask_restx import Namespace
 
 from application.api.answer.services.conversation_service import ConversationService
-
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
 from application.llm.llm_creator import LLMCreator
@@ -86,7 +85,7 @@ class BaseAnswerResource:
 
         token_usage_collection = self.db["token_usage"]
 
-        end_date = datetime.datetime.now()
+        end_date = datetime.datetime.now(tz=datetime.timezone.utc)
         start_date = end_date - datetime.timedelta(hours=24)
 
         match_query = {

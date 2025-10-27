@@ -2,15 +2,18 @@ import logging
 import os
 from abc import ABC, abstractmethod
 
+from application.core.settings import settings
 from langchain_openai import OpenAIEmbeddings
 from sentence_transformers import SentenceTransformer
 
-from application.core.settings import settings
+
+class EmbeddingsWrapper:
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingsWrapper:
     def __init__(self, model_name, *args, **kwargs):
-        logging.info(f"Initializing EmbeddingsWrapper with model: {model_name}")
+        logger.info(f"Initializing EmbeddingsWrapper with model: {model_name}")
         try:
             kwargs.setdefault("trust_remote_code", True)
             self.model = SentenceTransformer(
@@ -24,9 +27,9 @@ class EmbeddingsWrapper:
                     f"SentenceTransformer model failed to load properly for: {model_name}"
                 )
             self.dimension = self.model.get_sentence_embedding_dimension()
-            logging.info(f"Successfully loaded model with dimension: {self.dimension}")
+            logger.info(f"Successfully loaded model with dimension: {self.dimension}")
         except Exception as e:
-            logging.error(
+            logger.error(
                 f"Failed to initialize SentenceTransformer with model {model_name}: {str(e)}",
                 exc_info=True,
             )
@@ -48,10 +51,12 @@ class EmbeddingsWrapper:
 
 
 class EmbeddingsSingleton:
-    _instances = {}
+    _instances = None
 
     @staticmethod
     def get_instance(embeddings_name, *args, **kwargs):
+        if EmbeddingsSingleton._instances is None:
+            EmbeddingsSingleton._instances = {}
         if embeddings_name not in EmbeddingsSingleton._instances:
             EmbeddingsSingleton._instances[embeddings_name] = (
                 EmbeddingsSingleton._create_instance(embeddings_name, *args, **kwargs)
@@ -140,16 +145,16 @@ class BaseVectorStore(ABC):
             for path in possible_paths:
                 if os.path.exists(path):
                     local_model_path = path
-                    logging.info(f"Found local model at path: {path}")
+                    logger.info(f"Found local model at path: {path}")
                     break
                 else:
-                    logging.info(f"Path does not exist: {path}")
+                    logger.info(f"Path does not exist: {path}")
             if local_model_path:
                 embedding_instance = EmbeddingsSingleton.get_instance(
                     local_model_path,
                 )
             else:
-                logging.warning(
+                logger.warning(
                     f"Local model not found in any of the paths: {possible_paths}. Falling back to HuggingFace download."
                 )
                 embedding_instance = EmbeddingsSingleton.get_instance(

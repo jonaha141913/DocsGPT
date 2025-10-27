@@ -1,19 +1,19 @@
 """Simple reader that reads files of different formats from a directory."""
 import logging
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Optional, Union
 
 from application.parser.file.base import BaseReader
 from application.parser.file.base_parser import BaseParser
 from application.parser.file.docs_parser import DocxParser, PDFParser
 from application.parser.file.epub_parser import EpubParser
 from application.parser.file.html_parser import HTMLParser
-from application.parser.file.markdown_parser import MarkdownParser
-from application.parser.file.rst_parser import RstParser
-from application.parser.file.tabular_parser import PandasCSVParser,ExcelParser
-from application.parser.file.json_parser import JSONParser
-from application.parser.file.pptx_parser import PPTXParser
 from application.parser.file.image_parser import ImageParser
+from application.parser.file.json_parser import JSONParser
+from application.parser.file.markdown_parser import MarkdownParser
+from application.parser.file.pptx_parser import PPTXParser
+from application.parser.file.rst_parser import RstParser
+from application.parser.file.tabular_parser import ExcelParser, PandasCSVParser
 from application.parser.schema.base import Document
 from application.utils import num_tokens_from_string
 
@@ -126,7 +126,7 @@ class SimpleDirectoryReader(BaseReader):
             new_input_files = new_input_files[0: self.num_files_limit]
 
         # print total number of files added
-        logging.debug(
+        logger.debug(
             f"> [SimpleDirectoryReader] Total files added: {len(new_input_files)}"
         )
 
@@ -197,7 +197,7 @@ class SimpleDirectoryReader(BaseReader):
         # Build directory structure if input_dir is provided
         if hasattr(self, 'input_dir'):
             self.directory_structure = self.build_directory_structure(self.input_dir)
-            logging.info("Directory structure built successfully")
+            logger.info("Directory structure built successfully")
         else:
             self.directory_structure = {}
 
