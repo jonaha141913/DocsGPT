@@ -2,7 +2,6 @@ import logging
 from abc import ABC, abstractmethod
 
 from application.cache import gen_cache, stream_cache
-
 from application.core.settings import settings
 from application.usage import gen_token_usage, stream_token_usage
 
@@ -12,7 +11,7 @@ logger = logging.getLogger(__name__)
 class BaseLLM(ABC):
     def __init__(
         self,
-        decoded_token=None,
+        decoded_token: str | None = None,
     ):
         self.decoded_token = decoded_token
         self.token_usage = {"prompt_tokens": 0, "generated_tokens": 0}
@@ -39,8 +38,8 @@ class BaseLLM(ABC):
                     self.decoded_token,
                 )
             except Exception as e:
-                logger.error(
-                    f"Failed to initialize fallback LLM: {str(e)}", exc_info=True
+                logger.exception(
+                    f"Failed to initialize fallback LLM: {str(e)}"
                 )
         return self._fallback_llm
 
@@ -73,10 +72,10 @@ class BaseLLM(ABC):
             return decorated_method()
         except Exception as e:
             if not self.fallback_llm:
-                logger.error(f"Primary LLM failed and no fallback available: {str(e)}")
+                logger.error(f"Primary LLM failed and no fallback available: {e}")
                 raise
             logger.warning(
-                f"Falling back to {self.fallback_provider}/{self.fallback_model_name}. Error: {str(e)}"
+                f"Falling back to {self.fallback_provider}/{self.fallback_model_name}. Error: {e}"
             )
 
             fallback_method = getattr(

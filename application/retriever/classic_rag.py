@@ -103,8 +103,8 @@ class ClassicRAG(BaseRetriever):
             rephrased_query = self.llm.gen(model=self.gpt_model, messages=messages)
             print(f"Rephrased query: {rephrased_query}")
             return rephrased_query if rephrased_query else self.original_question
-        except Exception as e:
-            logging.error(f"Error rephrasing query: {e}", exc_info=True)
+        except Exception:
+            logging.exception("Error rephrasing query")
             return self.original_question
 
     def _get_data(self):
@@ -178,10 +178,9 @@ class ClassicRAG(BaseRetriever):
                     if cumulative_tokens >= token_budget:
                         break
 
-                except Exception as e:
-                    logging.error(
-                        f"Error searching vectorstore {vectorstore_id}: {e}",
-                        exc_info=True,
+                except Exception:
+                    logging.exception(
+                        f"Error searching vectorstore {vectorstore_id}"
                     )
                     continue
 

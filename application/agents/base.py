@@ -245,12 +245,12 @@ class BaseAgent(ABC):
             user_id=self.user,  # Pass user ID for MCP tools credential decryption
         )
         if tool_data["name"] == "api_tool":
-            print(
+            logger.debug(
                 f"Executing api: {action_name} with query_params: {query_params}, headers: {headers}, body: {body}"
             )
             result = tool.execute_action(action_name, **body)
         else:
-            print(f"Executing tool: {action_name} with args: {call_args}")
+            logger.debug(f"Executing tool: {action_name} with args: {call_args}")
             result = tool.execute_action(action_name, **parameters)
         tool_call_data["result"] = (
             f"{str(result)[:50]}..." if len(str(result)) > 50 else result
@@ -279,7 +279,7 @@ class BaseAgent(ABC):
         self,
         system_prompt: str,
         query: str,
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """Build messages using pre-rendered system prompt"""
         messages = [{"role": "system", "content": system_prompt}]
 
@@ -315,7 +315,7 @@ class BaseAgent(ABC):
         messages.append({"role": "user", "content": query})
         return messages
 
-    def _llm_gen(self, messages: List[Dict], log_context: Optional[LogContext] = None):
+    def _llm_gen(self, messages: list[dict], log_context: Optional[LogContext] = None):
         gen_kwargs = {"model": self.gpt_model, "messages": messages}
 
         if (
@@ -347,10 +347,10 @@ class BaseAgent(ABC):
     def _llm_handler(
         self,
         resp,
-        tools_dict: Dict,
-        messages: List[Dict],
+        tools_dict: dict,
+        messages: list[dict],
         log_context: Optional[LogContext] = None,
-        attachments: Optional[List[Dict]] = None,
+        attachments: Optional[list[dict]] = None,
     ):
         resp = self.llm_handler.process_message_flow(
             self, resp, tools_dict, messages, attachments, True

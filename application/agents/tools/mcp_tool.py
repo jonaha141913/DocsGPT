@@ -261,7 +261,7 @@ class MCPTool(Tool):
                 finally:
                     loop.close()
         except Exception as e:
-            print(f"Error occurred while running async operation: {e}")
+            logging.exception(f"Error occurred while running async operation: {e}")
             raise
 
     def discover_tools(self) -> List[Dict]:
@@ -280,7 +280,7 @@ class MCPTool(Tool):
             self.available_tools = tools
             return self.available_tools
         except Exception as e:
-            raise Exception(f"Failed to discover tools from MCP server: {str(e)}")
+            raise RuntimeError(f"Failed to discover tools from MCP server: {str(e)}") from e
 
     def execute_action(self, action_name: str, **kwargs) -> Any:
         """
@@ -294,7 +294,7 @@ class MCPTool(Tool):
             Result from the MCP server
         """
         if not self.server_url:
-            raise Exception("No MCP server configured")
+            raise RuntimeError("No MCP server configured")
         if not self._client:
             self._setup_client()
         cleaned_kwargs = {}
@@ -308,7 +308,7 @@ class MCPTool(Tool):
             )
             return self._format_result(result)
         except Exception as e:
-            raise Exception(f"Failed to execute action '{action_name}': {str(e)}")
+            raise RuntimeError(f"Failed to execute action '{action_name}': {str(e)}") from e
 
     def _format_result(self, result) -> Dict:
         """Format FastMCP result to match expected format."""
@@ -390,7 +390,7 @@ class MCPTool(Tool):
         try:
             task = mcp_oauth_task.delay(config=self.config, user=self.user_id)
             if not task:
-                raise Exception("Failed to start OAuth authentication")
+                raise RuntimeError("Failed to start OAuth authentication")
             return {
                 "success": True,
                 "requires_oauth": True,
@@ -569,10 +569,10 @@ class DocsGPTOAuth(OAuthClientProvider):
         redirect_uri: str,
         redis_client: Redis | None = None,
         redis_prefix: str = "mcp_oauth:",
-        task_id: str = None,
+        task_id: str | None = None,
         scopes: str | list[str] | None = None,
         client_name: str = "DocsGPT-MCP",
-        user_id=None,
+        user_id: str | None = None,
         db=None,
         additional_client_metadata: dict[str, Any] | None = None,
     ):
@@ -640,8 +640,8 @@ class DocsGPTOAuth(OAuthClientProvider):
             else:
                 raise ValueError("No state in auth URL")
             return authorization_url, state
-        except Exception as e:
-            raise Exception(f"Failed to process auth URL: {e}")
+        except ValueError as e:
+            raise ValueError(f"Failed to process auth URL: {e}") from e
 
     async def redirect_handler(self, authorization_url: str) -> None:
         """Store auth URL and state in Redis for frontend to use."""
@@ -672,7 +672,7 @@ class DocsGPTOAuth(OAuthClientProvider):
     async def callback_handler(self) -> tuple[str, str | None]:
         """Wait for auth code from Redis using the state value."""
         if not self.redis_client or not self.extracted_state:
-            raise Exception("Redis client or state not configured for OAuth")
+            raise RuntimeError("Redis client or state not configured for OAuth")
         poll_interval = 1
         max_wait_time = 300
         code_key = f"{self.redis_prefix}code:{self.extracted_state}"
@@ -722,11 +722,11 @@ class DocsGPTOAuth(OAuthClientProvider):
                 self.redis_client.delete(
                     f"{self.redis_prefix}state:{self.extracted_state}"
                 )
-                raise Exception(f"OAuth error: {error_msg}")
+                raise RuntimeError(f"OAuth error: {error_msg}")
             await asyncio.sleep(poll_interval)
         self.redis_client.delete(f"{self.redis_prefix}auth_url:{self.extracted_state}")
         self.redis_client.delete(f"{self.redis_prefix}state:{self.extracted_state}")
-        raise Exception("OAuth callback timeout: no code received within 5 minutes")
+        raise RuntimeError("OAuth callback timeout: no code received within 5 minutes")
 
 
 class DBTokenStorage(TokenStorage):
@@ -838,11 +838,11 @@ class MCPOAuthManager:
         """
         try:
             if not self.redis_client or not state:
-                raise Exception("Redis client or state not provided")
+                raise RuntimeError("Redis client or state not provided")
             if error:
                 error_key = f"{self.redis_prefix}error:{state}"
                 self.redis_client.setex(error_key, 300, error)
-                raise Exception(f"OAuth error received: {error}")
+                raise RuntimeError(f"OAuth error received: {error}")
             code_key = f"{self.redis_prefix}code:{state}"
             self.redis_client.setex(code_key, 300, code)
 

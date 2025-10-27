@@ -1,9 +1,9 @@
 """Tool management MCP server integration."""
 
 import json
-from email.quoprimime import unquote
 
 from bson.objectid import ObjectId
+from email.quoprimime import unquote
 from flask import current_app, jsonify, make_response, redirect, request
 from flask_restx import fields, Namespace, Resource
 
@@ -65,11 +65,11 @@ class TestMCPServerConfig(Resource):
             result = mcp_tool.test_connection()
 
             return make_response(jsonify(result), 200)
-        except Exception as e:
-            current_app.logger.error(f"Error testing MCP server: {e}", exc_info=True)
+        except Exception:
+            current_app.logger.exception("Error testing MCP server")
             return make_response(
                 jsonify(
-                    {"success": False, "error": f"Connection test failed: {str(e)}"}
+                    {"success": False, "error": "Connection test failed"}
                 ),
                 500,
             )
@@ -118,9 +118,8 @@ class MCPServerSave(Resource):
                     auth_credentials["api_key"] = config["api_key"]
                 if "api_key_header" in config:
                     auth_credentials["api_key_header"] = config["api_key_header"]
-            elif auth_type == "bearer":
-                if "bearer_token" in config and config["bearer_token"]:
-                    auth_credentials["bearer_token"] = config["bearer_token"]
+            elif auth_type == "bearer" and "bearer_token" in config and config["bearer_token"]:
+                auth_credentials["bearer_token"] = config["bearer_token"]
             elif auth_type == "basic":
                 if "username" in config and config["username"]:
                     auth_credentials["username"] = config["username"]
@@ -230,11 +229,11 @@ class MCPServerSave(Resource):
                     "tools_count": len(transformed_actions),
                 }
             return make_response(jsonify(response_data), 200)
-        except Exception as e:
-            current_app.logger.error(f"Error saving MCP server: {e}", exc_info=True)
+        except Exception:
+            current_app.logger.exception("Error saving MCP server")
             return make_response(
                 jsonify(
-                    {"success": False, "error": f"Failed to save MCP server: {str(e)}"}
+                    {"success": False, "error": "Failed to save MCP server"}
                 ),
                 500,
             )
@@ -287,12 +286,10 @@ class MCPOAuthCallback(Resource):
                 return redirect(
                     "/api/connectors/callback-status?status=error&message=OAuth+callback+failed.&provider=mcp_tool"
                 )
-        except Exception as e:
-            current_app.logger.error(
-                f"Error handling MCP OAuth callback: {str(e)}", exc_info=True
-            )
+        except Exception:
+            current_app.logger.exception("Error handling MCP OAuth callback")
             return redirect(
-                f"/api/connectors/callback-status?status=error&message=Internal+server+error:+{str(e)}.&provider=mcp_tool"
+                "/api/connectors/callback-status?status=error&message=Internal+server+error.&provider=mcp_tool"
             )
 
 
@@ -324,10 +321,8 @@ class MCPOAuthStatus(Resource):
                     ),
                     404,
                 )
-        except Exception as e:
-            current_app.logger.error(
-                f"Error getting OAuth status for task {task_id}: {str(e)}"
-            )
+        except Exception:
+            current_app.logger.exception(f"Error getting OAuth status for task {task_id}")
             return make_response(
-                jsonify({"success": False, "error": str(e), "task_id": task_id}), 500
+                jsonify({"success": False, "error": "Internal server error", "task_id": task_id}), 500
             )

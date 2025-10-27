@@ -500,10 +500,6 @@ class TestProcessResponseStream:
             assert result[5] is None
 
     def test_handles_stream_error(self, mock_mongo_db, flask_app):
-        import json
-
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -518,8 +514,6 @@ class TestProcessResponseStream:
             assert result[4] == "Test error"
 
     def test_handles_malformed_stream_data(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 
@@ -536,8 +530,6 @@ class TestProcessResponseStream:
 @pytest.mark.unit
 class TestErrorStreamGenerate:
     def test_generates_error_stream(self, mock_mongo_db, flask_app):
-        from application.api.answer.routes.base import BaseAnswerResource
-
         with flask_app.app_context():
             resource = BaseAnswerResource()
 

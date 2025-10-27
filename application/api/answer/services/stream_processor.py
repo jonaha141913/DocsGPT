@@ -3,10 +3,9 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from bson.dbref import DBRef
-
 from bson.objectid import ObjectId
 
 from application.agents.agent_creator import AgentCreator
@@ -54,7 +53,7 @@ def get_prompt(prompt_id: str, prompts_collection=None) -> str:
         if not prompt_doc:
             raise ValueError(f"Prompt with ID {prompt_id} not found")
         return prompt_doc["content"]
-    except Exception as e:
+    except (ValueError, KeyError) as e:
         raise ValueError(f"Invalid prompt ID: {prompt_id}") from e
 
 
@@ -136,26 +135,26 @@ class StreamProcessor:
                 if attachment_doc:
                     attachments.append(attachment_doc)
             except Exception as e:
-                logger.error(
-                    f"Error retrieving attachment {attachment_id}: {e}", exc_info=True
+                logger.exception(
+                    f"Error retrieving attachment {attachment_id}: {e}"
                 )
         return attachments
 
-    def _get_agent_key(self, agent_id: Optional[str], user_id: Optional[str]) -> tuple:
+    def _get_agent_key(self, agent_id: str | None, user_id: str | None) -> tuple:
         """Get API key for agent with access control"""
         if not agent_id:
             return None, False, None
         try:
             agent = self.agents_collection.find_one({"_id": ObjectId(agent_id)})
             if agent is None:
-                raise Exception("Agent not found")
+                raise ValueError("Agent not found")
             is_owner = agent.get("user") == user_id
             is_shared_with_user = agent.get(
                 "shared_publicly", False
             ) or user_id in agent.get("shared_with", [])
 
             if not (is_owner or is_shared_with_user):
-                raise Exception("Unauthorized access to the agent")
+                raise PermissionError("Unauthorized access to the agent")
             if is_owner:
                 self.agents_collection.update_one(
                     {"_id": ObjectId(agent_id)},
@@ -166,11 +165,11 @@ class StreamProcessor:
                     },
                 )
             return str(agent["key"]), not is_owner, agent.get("shared_token")
-        except Exception as e:
-            logger.error(f"Error in get_agent_key: {str(e)}", exc_info=True)
+        except (ValueError, PermissionError) as e:
+            logger.exception(f"Error in get_agent_key: {str(e)}")
             raise
 
-    def _get_data_from_api_key(self, api_key: str) -> Dict[str, Any]:
+    def _get_data_from_api_key(self, api_key: str) -> dict[str, Any]:
         data = self.agents_collection.find_one({"key": api_key})
         if not data:
             raise Exception("Invalid API Key, please generate a new key", 401)
@@ -347,7 +346,7 @@ class StreamProcessor:
             decoded_token=self.decoded_token,
         )
 
-    def pre_fetch_docs(self, question: str) -> tuple[Optional[str], Optional[list]]:
+    def pre_fetch_docs(self, question: str) -> tuple[str | None, list | None]:
         """Pre-fetch documents for template rendering before agent creation"""
         if self.data.get("isNoneDoc", False):
             logger.info("Pre-fetch skipped: isNoneDoc=True")
@@ -379,10 +378,10 @@ class StreamProcessor:
 
             return docs_together, docs
         except Exception as e:
-            logger.error(f"Failed to pre-fetch docs: {str(e)}", exc_info=True)
+            logger.exception(f"Failed to pre-fetch docs: {str(e)}")
             return None, None
 
-    def pre_fetch_tools(self) -> Optional[Dict[str, Any]]:
+    def pre_fetch_tools(self) -> dict[str, Any] | None:
         """Pre-fetch tool data for template rendering before agent creation
 
         Can be controlled via:
@@ -430,12 +429,12 @@ class StreamProcessor:
 
             return tools_data if tools_data else None
         except Exception as e:
-            logger.warning(f"Failed to pre-fetch tools: {str(e)}")
+            logger.exception(f"Failed to pre-fetch tools: {str(e)}")
             return None
 
     def _fetch_memory_tool_data(
-        self, tool_doc: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, tool_doc: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Fetch memory tool data for pre-injection into prompt"""
         try:
             tool_config = tool_doc.get("config", {}).copy()
@@ -452,7 +451,7 @@ class StreamProcessor:
 
             return {"root": root_view, "available": True}
         except Exception as e:
-            logger.warning(f"Failed to fetch memory tool data: {str(e)}")
+            logger.exception(f"Failed to fetch memory tool data: {str(e)}")
             return None
 
     def create_agent(
