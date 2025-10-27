@@ -7,7 +7,7 @@ import uuid
 from bson.dbref import DBRef
 from bson.objectid import ObjectId
 from flask import current_app, jsonify, make_response, request
-from flask_restx import fields, Namespace, Resource
+from flask_restx import Namespace, Resource, fields
 
 from application.api import api
 from application.api.user.base import (
@@ -98,7 +98,7 @@ class GetAgent(Resource):
             }
             return make_response(jsonify(data), 200)
         except Exception as e:
-            current_app.logger.error(f"Agent fetch error: {e}", exc_info=True)
+            current_app.logger.exception(f"Agent fetch error: {e}")
             return {"success": False}, 400
 
 
@@ -177,7 +177,7 @@ class GetAgents(Resource):
                 if "source" in agent or "retriever" in agent
             ]
         except Exception as err:
-            current_app.logger.error(f"Error retrieving agents: {err}", exc_info=True)
+            current_app.logger.exception(f"Error retrieving agents: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(list_agents), 200)
 
@@ -289,10 +289,10 @@ class CreateAgent(Resource):
                         ),
                         400,
                     )
-            except Exception as e:
+            except (TypeError, ValueError) as e:
                 return make_response(
                     jsonify(
-                        {"success": False, "message": f"Invalid JSON schema: {str(e)}"}
+                        {"success": False, "message": f"Invalid JSON schema: {e!s}"}
                     ),
                     400,
                 )
@@ -411,7 +411,7 @@ class CreateAgent(Resource):
             resp = agents_collection.insert_one(new_agent)
             new_id = str(resp.inserted_id)
         except Exception as err:
-            current_app.logger.error(f"Error creating agent: {err}", exc_info=True)
+            current_app.logger.exception(f"Error creating agent: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": new_id, "key": key}), 201)
 
@@ -489,7 +489,7 @@ class UpdateAgent(Resource):
                 data = request.form.to_dict()
                 json_fields = ["tools", "sources", "json_schema"]
                 for field in json_fields:
-                    if field in data and data[field]:
+                    if data.get(field):
                         try:
                             data[field] = json.loads(data[field])
                         except json.JSONDecodeError:
@@ -503,18 +503,14 @@ class UpdateAgent(Resource):
                                 400,
                             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error parsing request data: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error parsing request data: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Invalid request data"}), 400
             )
         try:
             existing_agent = agents_collection.find_one({"_id": oid, "user": user})
         except Exception as err:
-            current_app.logger.error(
-                f"Error finding agent {agent_id}: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error finding agent {agent_id}: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Database error finding agent"}),
                 500,
@@ -741,17 +737,18 @@ class UpdateAgent(Resource):
                     )
             else:
                 value = data[field]
-                if field in ["name", "description", "prompt_id", "agent_type"]:
-                    if not value or not str(value).strip():
-                        return make_response(
-                            jsonify(
-                                {
-                                    "success": False,
-                                    "message": f"Field '{field}' cannot be empty",
-                                }
-                            ),
-                            400,
-                        )
+                if field in ["name", "description", "prompt_id", "agent_type"] and (
+                    not value or not str(value).strip()
+                ):
+                    return make_response(
+                        jsonify(
+                            {
+                                "success": False,
+                                "message": f"Field '{field}' cannot be empty",
+                            }
+                        ),
+                        400,
+                    )
                 update_fields[field] = value
         if image_url:
             update_fields["image"] = image_url
@@ -839,9 +836,7 @@ class UpdateAgent(Resource):
                     200,
                 )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating agent {agent_id}: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating agent {agent_id}: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Database error during update"}),
                 500,
@@ -879,7 +874,7 @@ class DeleteAgent(Resource):
                 )
             deleted_id = str(deleted_agent["_id"])
         except Exception as err:
-            current_app.logger.error(f"Error deleting agent: {err}", exc_info=True)
+            current_app.logger.exception(f"Error deleting agent: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": deleted_id}), 200)
 
@@ -954,7 +949,7 @@ class PinnedAgents(Resource):
                 if "source" in agent or "retriever" in agent
             ]
         except Exception as err:
-            current_app.logger.error(f"Error retrieving pinned agents: {err}")
+            current_app.logger.exception(f"Error retrieving pinned agents: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(list_pinned_agents), 200)
 
@@ -976,7 +971,7 @@ class GetTemplateAgents(Resource):
             ]
             return make_response(jsonify(template_agents), 200)
         except Exception as e:
-            current_app.logger.error(f"Template agents fetch error: {e}", exc_info=True)
+            current_app.logger.exception(f"Template agents fetch error: {e}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -1019,7 +1014,7 @@ class AdoptAgent(Resource):
                 jsonify({"success": True, "agent": response_agent}), 200
             )
         except Exception as e:
-            current_app.logger.error(f"Agent adopt error: {e}", exc_info=True)
+            current_app.logger.exception(f"Agent adopt error: {e}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -1059,7 +1054,7 @@ class PinAgent(Resource):
                 )
                 action = "pinned"
         except Exception as err:
-            current_app.logger.error(f"Error pinning/unpinning agent: {err}")
+            current_app.logger.exception(f"Error pinning/unpinning agent: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Server error"}), 500
             )
@@ -1105,7 +1100,7 @@ class RemoveSharedAgent(Resource):
 
             return make_response(jsonify({"success": True, "action": "removed"}), 200)
         except Exception as err:
-            current_app.logger.error(f"Error removing shared agent: {err}")
+            current_app.logger.exception(f"Error removing shared agent: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Server error"}), 500
             )

@@ -1,6 +1,7 @@
 """Agent management webhook handlers."""
 
 import secrets
+from typing import ClassVar
 
 from bson.objectid import ObjectId
 from flask import current_app, jsonify, make_response, request
@@ -51,9 +52,7 @@ class AgentWebhook(Resource):
             base_url = settings.API_URL.rstrip("/")
             full_webhook_url = f"{base_url}/api/webhooks/agents/{webhook_token}"
         except Exception as err:
-            current_app.logger.error(
-                f"Error generating webhook URL: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error generating webhook URL: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Error generating webhook URL"}),
                 400,
@@ -65,7 +64,7 @@ class AgentWebhook(Resource):
 
 @agents_webhooks_ns.route("/webhooks/agents/<string:webhook_token>")
 class AgentWebhookListener(Resource):
-    method_decorators = [require_agent]
+    method_decorators: ClassVar[list] = [require_agent]
 
     def _enqueue_webhook_task(self, agent_id_str, payload, source_method):
         if not payload:
@@ -86,9 +85,8 @@ class AgentWebhookListener(Resource):
             )
             return make_response(jsonify({"success": True, "task_id": task.id}), 200)
         except Exception as err:
-            current_app.logger.error(
-                f"Error enqueuing webhook task ({source_method}) for agent {agent_id_str}: {err}",
-                exc_info=True,
+            current_app.logger.exception(
+                f"Error enqueuing webhook task ({source_method}) for agent {agent_id_str}: {err}"
             )
             return make_response(
                 jsonify({"success": False, "message": "Error processing webhook"}), 500

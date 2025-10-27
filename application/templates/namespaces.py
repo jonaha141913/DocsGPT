@@ -2,7 +2,7 @@ import logging
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -11,15 +11,13 @@ class NamespaceBuilder(ABC):
     """Base class for building template context namespaces"""
 
     @abstractmethod
-    def build(self, **kwargs) -> Dict[str, Any]:
+    def build(self, **kwargs) -> dict[str, Any]:
         """Build namespace context dictionary"""
-        pass
 
     @property
     @abstractmethod
     def namespace_name(self) -> str:
         """Name of this namespace for template access"""
-        pass
 
 
 class SystemNamespace(NamespaceBuilder):
@@ -30,8 +28,8 @@ class SystemNamespace(NamespaceBuilder):
         return "system"
 
     def build(
-        self, request_id: Optional[str] = None, user_id: Optional[str] = None, **kwargs
-    ) -> Dict[str, Any]:
+        self, request_id: str | None = None, user_id: str | None = None, **kwargs
+    ) -> dict[str, Any]:
         """
         Build system context with metadata.
 
@@ -61,8 +59,8 @@ class PassthroughNamespace(NamespaceBuilder):
         return "passthrough"
 
     def build(
-        self, passthrough_data: Optional[Dict[str, Any]] = None, **kwargs
-    ) -> Dict[str, Any]:
+        self, passthrough_data: dict[str, Any] | None = None, **kwargs
+    ) -> dict[str, Any]:
         """
         Build passthrough context from request parameters.
 
@@ -93,8 +91,8 @@ class SourceNamespace(NamespaceBuilder):
         return "source"
 
     def build(
-        self, docs: Optional[list] = None, docs_together: Optional[str] = None, **kwargs
-    ) -> Dict[str, Any]:
+        self, docs: list | None = None, docs_together: str | None = None, **kwargs
+    ) -> dict[str, Any]:
         """
         Build source context from RAG retrieval results.
 
@@ -125,8 +123,8 @@ class ToolsNamespace(NamespaceBuilder):
         return "tools"
 
     def build(
-        self, tools_data: Optional[Dict[str, Any]] = None, **kwargs
-    ) -> Dict[str, Any]:
+        self, tools_data: dict[str, Any] | None = None, **kwargs
+    ) -> dict[str, Any]:
         """
         Build tools context with pre-executed tool results.
 
@@ -162,7 +160,7 @@ class NamespaceManager:
             "tools": ToolsNamespace(),
         }
 
-    def build_context(self, **kwargs) -> Dict[str, Any]:
+    def build_context(self, **kwargs) -> dict[str, Any]:
         """
         Build complete template context from all namespaces.
 
@@ -180,11 +178,11 @@ class NamespaceManager:
                 # Always include namespace, even if empty, to prevent undefined errors
                 context[namespace_name] = namespace_context if namespace_context else {}
             except Exception as e:
-                logger.error(f"Failed to build {namespace_name} namespace: {str(e)}")
+                logger.exception(f"Failed to build {namespace_name} namespace: {e!s}")
                 # Include empty namespace on error to prevent template failures
                 context[namespace_name] = {}
         return context
 
-    def get_builder(self, namespace_name: str) -> Optional[NamespaceBuilder]:
+    def get_builder(self, namespace_name: str) -> NamespaceBuilder | None:
         """Get specific namespace builder"""
         return self._builders.get(namespace_name)
