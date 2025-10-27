@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Optional
 
 from pydantic_settings import BaseSettings
 
@@ -27,8 +26,8 @@ class Settings(BaseSettings):
         "gpt-4o-mini": 128000,
         "gpt-4": 8192,
         "gpt-3.5-turbo": 4096,
-        "claude-2": int(1e5),
-        "gemini-2.5-flash": int(1e6),
+        "claude-2": 100000,
+        "gemini-2.5-flash": 1000000,
     }
     DEFAULT_LLM_TOKEN_LIMIT: int = 128000
     RESERVED_TOKENS: dict = {
@@ -46,7 +45,7 @@ class Settings(BaseSettings):
     VECTOR_STORE: str = (
         "faiss"  #  "faiss" or "elasticsearch" or "qdrant" or "milvus" or "lancedb"
     )
-    RETRIEVERS_ENABLED: list = ["classic_rag"]
+    RETRIEVERS_ENABLED: tuple = ("classic_rag",)
     AGENT_NAME: str = "classic"
     FALLBACK_LLM_PROVIDER: Optional[str] = None  # provider for fallback llm
     FALLBACK_LLM_NAME: Optional[str] = None  # model name for fallback llm

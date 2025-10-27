@@ -1,7 +1,6 @@
 import logging
 import os
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Union
 
 import yaml
 from bson import ObjectId
@@ -28,7 +27,7 @@ class DatabaseSeeder:
         self.system_user_id = "system"
         self.logger = logging.getLogger(__name__)
 
-    def seed_initial_data(self, config_path: str = None, force=False):
+    def seed_initial_data(self, config_path: str | None = None, force=False):
         """Main entry point for seeding all initial data"""
         if not force and self._is_already_seeded():
             self.logger.info("Database already seeded. Use force=True to reseed.")
@@ -41,11 +40,11 @@ class DatabaseSeeder:
             with open(config_path, "r") as f:
                 config = yaml.safe_load(f)
                 self._seed_from_config(config)
-        except Exception as e:
+        except (FileNotFoundError, yaml.YAMLError) as e:
             self.logger.error(f"Failed to load seeding config: {str(e)}")
             raise
 
-    def _seed_from_config(self, config: Dict):
+    def _seed_from_config(self, config: dict):
         """Seed all data from configuration"""
         self.logger.info("🌱 Starting seeding...")
 
@@ -123,7 +122,7 @@ class DatabaseSeeder:
                 continue
         self.logger.info("✅ Database seeding completed")
 
-    def _handle_source(self, agent_config: Dict) -> Union[ObjectId, None, bool]:
+    def _handle_source(self, agent_config: dict) -> ObjectId | None | bool:
         """Handle source ingestion and return source ID"""
         if not agent_config.get("source"):
             self.logger.info(
@@ -152,19 +151,19 @@ class DatabaseSeeder:
             result = task.get(timeout=300)
 
             if not task.successful():
-                raise Exception(f"Source ingestion failed: {result}")
+                raise RuntimeError(f"Source ingestion failed: {result}")
             source_id = None
             if isinstance(result, dict) and "id" in result:
                 source_id = result["id"]
             else:
-                raise Exception(f"Source ingestion result missing 'id': {result}")
+                raise RuntimeError(f"Source ingestion result missing 'id': {result}")
             self.logger.info(f"Source ingested successfully: {source_id}")
             return source_id
-        except Exception as e:
+        except (RuntimeError, Exception) as e:
             self.logger.error(f"Failed to ingest source: {str(e)}")
             return False
 
-    def _handle_tools(self, agent_config: Dict) -> List[ObjectId]:
+    def _handle_tools(self, agent_config: dict) -> list[ObjectId]:
         """Handle tool creation and return list of tool IDs"""
         tool_ids = []
         if not agent_config.get("tools"):
@@ -204,7 +203,7 @@ class DatabaseSeeder:
                 continue
         return tool_ids
 
-    def _handle_prompt(self, agent_config: Dict) -> Optional[str]:
+    def _handle_prompt(self, agent_config: dict) -> str | None:
         """Handle prompt creation and return prompt ID"""
         if not agent_config.get("prompt"):
             return None

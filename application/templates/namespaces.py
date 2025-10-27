@@ -2,7 +2,7 @@ import logging
 import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +162,7 @@ class NamespaceManager:
             "tools": ToolsNamespace(),
         }
 
-    def build_context(self, **kwargs) -> Dict[str, Any]:
+    def build_context(self, **kwargs) -> dict[str, Any]:
         """
         Build complete template context from all namespaces.
 

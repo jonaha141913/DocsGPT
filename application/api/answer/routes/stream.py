@@ -5,9 +5,7 @@ from flask import request, Response
 from flask_restx import fields, Resource
 
 from application.api import api
-
 from application.api.answer.routes.base import answer_ns, BaseAnswerResource
-
 from application.api.answer.services.stream_processor import StreamProcessor
 
 logger = logging.getLogger(__name__)
@@ -122,6 +120,6 @@ class StreamResource(Resource, BaseAnswerResource):
             )
             return Response(
                 self.error_stream_generate("Unknown error occurred"),
-                status=400,
+                status=500,
                 mimetype="text/event-stream",
             )

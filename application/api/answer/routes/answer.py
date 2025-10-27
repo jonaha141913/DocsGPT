@@ -5,9 +5,7 @@ from flask import make_response, request
 from flask_restx import fields, Resource
 
 from application.api import api
-
 from application.api.answer.routes.base import answer_ns, BaseAnswerResource
-
 from application.api.answer.services.stream_processor import StreamProcessor
 
 logger = logging.getLogger(__name__)
@@ -129,9 +127,9 @@ class AnswerResource(Resource, BaseAnswerResource):
             if structured_info:
                 result.update(structured_info)
         except Exception as e:
-            logger.error(
-                f"/api/answer - error: {str(e)} - traceback: {traceback.format_exc()}",
-                extra={"error": str(e), "traceback": traceback.format_exc()},
+            logger.exception(
+                f"/api/answer - error: {str(e)}",
+                extra={"error": str(e)},
             )
             return make_response({"error": str(e)}, 500)
         return make_response(result, 200)

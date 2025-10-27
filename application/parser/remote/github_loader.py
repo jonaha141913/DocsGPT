@@ -1,11 +1,10 @@
 import base64
+import mimetypes
 import requests
 import time
-from typing import List, Optional
+from application.core.settings import settings
 from application.parser.remote.base import BaseRemote
 from application.parser.schema.base import Document
-import mimetypes
-from application.core.settings import settings
 
 class GitHubLoader(BaseRemote):
     def __init__(self):
@@ -46,7 +45,7 @@ class GitHubLoader(BaseRemote):
 
         return False
 
-    def fetch_file_content(self, repo_url: str, file_path: str) -> Optional[str]:
+    def fetch_file_content(self, repo_url: str, file_path: str) -> str | None:
         """Fetch file content. Returns None if file should be skipped (binary files or empty files)."""
         url = f"https://api.github.com/repos/{repo_url}/contents/{file_path}"
         response = self._make_request(url)
@@ -61,7 +60,7 @@ class GitHubLoader(BaseRemote):
                     if not decoded_content:
                         return None
                     return decoded_content
-                except Exception:
+                except (UnicodeDecodeError, ValueError):
                     # If decoding fails, it's probably a binary file
                     return None
             else:
@@ -103,11 +102,11 @@ class GitHubLoader(BaseRemote):
 
                     # Provide helpful error message
                     if remaining == "0":
-                        raise Exception(f"GitHub API rate limit exceeded. Please set GITHUB_ACCESS_TOKEN environment variable. Reset time: {reset_time}")
+                        raise RuntimeError(f"GitHub API rate limit exceeded. Please set GITHUB_ACCESS_TOKEN environment variable. Reset time: {reset_time}")
                     else:
-                        raise Exception(f"GitHub API error: {error_msg}. This may require authentication - set GITHUB_ACCESS_TOKEN environment variable.")
-                except Exception as e:
-                    if isinstance(e, Exception) and "GitHub API" in str(e):
+                        raise RuntimeError(f"GitHub API error: {error_msg}. This may require authentication - set GITHUB_ACCESS_TOKEN environment variable.")
+                except (json.JSONDecodeError, requests.exceptions.RequestException) as e:
+                    if isinstance(e, RuntimeError) and "GitHub API" in str(e):
                         raise
                     # If we can't parse the response, raise the original error
                     response.raise_for_status()

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Generator
+from typing import Generator
 
 from application.agents.base import BaseAgent
 from application.logging import LogContext
@@ -12,7 +12,7 @@ class ClassicAgent(BaseAgent):
 
     def _gen_inner(
         self, query: str, log_context: LogContext
-    ) -> Generator[Dict, None, None]:
+    ) -> Generator[dict, None, None]:
         """Core generator function for ClassicAgent execution flow"""
 
         tools_dict = (

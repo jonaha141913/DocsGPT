@@ -6,7 +6,6 @@ import os
 import shutil
 import string
 import tempfile
-from typing import Any, Dict
 import zipfile
 
 from collections import Counter
@@ -18,7 +17,6 @@ from bson.objectid import ObjectId
 
 from application.agents.agent_creator import AgentCreator
 from application.api.answer.services.stream_processor import get_prompt
-
 from application.cache import get_redis_instance
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
@@ -29,7 +27,6 @@ from application.parser.file.bulk import SimpleDirectoryReader
 from application.parser.remote.remote_creator import RemoteCreator
 from application.parser.schema.base import Document
 from application.retriever.retriever_creator import RetrieverCreator
-
 from application.storage.storage_creator import StorageCreator
 from application.utils import count_tokens_docs, num_tokens_from_string
 
@@ -208,7 +205,7 @@ def run_agent_logic(agent_config, input_data):
         logging.info(f"Agent response: {result}")
         return result
     except Exception as e:
-        logging.error(f"Error in run_agent_logic: {e}", exc_info=True)
+        logging.exception(f"Error in run_agent_logic: {e}")
         raise
 
 
@@ -271,7 +268,7 @@ def ingest_worker(
                         with open(local_file_path, "wb") as f:
                             f.write(file_data.read())
                     except Exception as e:
-                        logging.error(
+                        logging.exception(
                             f"Error downloading file {storage_file_path}: {e}"
                         )
                         continue
@@ -348,7 +345,7 @@ def ingest_worker(
 
             upload_index(vector_store_path, file_data)
         except Exception as e:
-            logging.error(f"Error in ingest_worker: {e}", exc_info=True)
+            logging.exception(f"Error in ingest_worker: {e}")
             raise
     return {
         "directory": directory,
@@ -413,7 +410,7 @@ def reingest_source_worker(self, source_id, user):
                         with open(local_file_path, "wb") as f:
                             f.write(file_data.read())
                     except Exception as e:
-                        logging.error(
+                        logging.exception(
                             f"Error downloading file {storage_file_path}: {e}"
                         )
                         continue
@@ -489,8 +486,8 @@ def reingest_source_worker(self, source_id, user):
                     logging.info("No files removed since last ingest.")
 
             except Exception as e:
-                logging.error(
-                    f"Error comparing directory structures: {e}", exc_info=True
+                logging.exception(
+                    f"Error comparing directory structures: {e}"
                 )
                 added_files = []
                 removed_files = []
@@ -537,16 +534,15 @@ def reingest_source_worker(self, source_id, user):
                                         vector_store.delete_chunk(cid)
                                         deleted += 1
                                     except Exception as de:
-                                        logging.error(
+                                        logging.exception(
                                             f"Failed deleting chunk {cid}: {de}"
                                         )
                         logging.info(
                             f"Deleted {deleted} chunks from {len(removed_files)} removed files"
                         )
                     except Exception as e:
-                        logging.error(
-                            f"Error during deletion of removed file chunks: {e}",
-                            exc_info=True,
+                        logging.exception(
+                            f"Error during deletion of removed file chunks: {e}"
                         )
 
                 # 2) Add chunks from new files
@@ -606,7 +602,7 @@ def reingest_source_worker(self, source_id, user):
                                             f"Updated token count for {rel_path}: {token_count}"
                                         )
                                 except Exception as e:
-                                    logging.warning(
+                                    logging.exception(
                                         f"Could not update token count for {file_path}: {e}"
                                     )
 
@@ -629,8 +625,8 @@ def reingest_source_worker(self, source_id, user):
                                 f"Added {added} chunks from {len(added_files)} new files"
                             )
                     except Exception as e:
-                        logging.error(
-                            f"Error during ingestion of new files: {e}", exc_info=True
+                        logging.exception(
+                            f"Error during ingestion of new files: {e}"
                         )
 
                 # 3) Update source directory structure timestamp
@@ -648,8 +644,8 @@ def reingest_source_worker(self, source_id, user):
                         },
                     )
                 except Exception as e:
-                    logging.error(
-                        f"Error updating directory_structure in DB: {e}", exc_info=True
+                    logging.exception(
+                        f"Error updating directory_structure in DB: {e}"
                     )
 
                 self.update_state(
@@ -667,13 +663,13 @@ def reingest_source_worker(self, source_id, user):
                     "chunks_deleted": deleted,
                 }
             except Exception as e:
-                logging.error(
-                    f"Error while processing file changes: {e}", exc_info=True
+                logging.exception(
+                    f"Error while processing file changes: {e}"
                 )
                 raise
 
     except Exception as e:
-        logging.error(f"Error in reingest_source_worker: {e}", exc_info=True)
+        logging.exception(f"Error in reingest_source_worker: {e}")
         raise
 
 
@@ -735,7 +731,7 @@ def remote_worker(
             file_data["last_sync"] = datetime.datetime.now()
         upload_index(full_path, file_data)
     except Exception as e:
-        logging.error("Error in remote_worker task: %s", str(e), exc_info=True)
+        logging.exception("Error in remote_worker task: %s", str(e))
         raise
     finally:
         if os.path.exists(full_path):
@@ -775,7 +771,7 @@ def sync(
             doc_id,
         )
     except Exception as e:
-        logging.error(f"Error during sync: {e}", exc_info=True)
+        logging.exception(f"Error during sync: {e}")
         return {"status": "error", "error": str(e)}
     return {"status": "success"}
 
@@ -876,10 +872,9 @@ def attachment_worker(self, file_info, user):
             "metadata": metadata,
         }
     except Exception as e:
-        logging.error(
+        logging.exception(
             f"Error processing file {filename}: {e}",
             extra={"user": user},
-            exc_info=True,
         )
         raise
 
@@ -908,13 +903,13 @@ def agent_webhook_worker(self, agent_id, payload):
             raise ValueError(f"Agent with ID {agent_id} not found.")
         input_data = json.dumps(payload)
     except Exception as e:
-        logging.error(f"Error processing agent webhook: {e}", exc_info=True)
+        logging.exception(f"Error processing agent webhook: {e}")
         return {"status": "error", "error": str(e)}
     self.update_state(state="PROGRESS", meta={"current": 50})
     try:
         result = run_agent_logic(agent_config, input_data)
     except Exception as e:
-        logging.error(f"Error running agent logic: {e}", exc_info=True)
+        logging.exception(f"Error running agent logic: {e}")
         return {"status": "error", "error": str(e)}
     finally:
         self.update_state(state="PROGRESS", meta={"current": 100})
@@ -937,7 +932,7 @@ def ingest_connector(
     operation_mode: str = "upload",
     doc_id=None,
     sync_frequency: str = "never",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Ingestion for internal knowledge bases (GoogleDrive, etc.).
 
@@ -1101,9 +1096,9 @@ def ingest_connector(
             }
 
             if operation_mode == "sync":
-                file_data["last_sync"] = datetime.datetime.now()
+                file_data["last_sync"] = datetime.datetime.now(datetime.timezone.utc)
             else:
-                file_data["last_sync"] = datetime.datetime.now()
+                file_data["last_sync"] = datetime.datetime.now(datetime.timezone.utc)
 
             upload_index(vector_store_path, file_data)
 
@@ -1124,11 +1119,11 @@ def ingest_connector(
             }
 
         except Exception as e:
-            logging.error(f"Error during remote ingestion: {e}", exc_info=True)
+            logging.exception(f"Error during remote ingestion: {e}")
             raise
 
 
-def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, Any]:
+def mcp_oauth(self, config: dict[str, Any], user_id: str = None) -> dict[str, Any]:
     """Worker to handle MCP OAuth flow asynchronously."""
 
     logging.info(
@@ -1143,7 +1138,7 @@ def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, An
         logging.info("[MCP OAuth] Task ID: %s", task_id)
         redis_client = get_redis_instance()
 
-        def update_status(status_data: Dict[str, Any]):
+        def update_status(status_data: dict[str, Any]):
             logging.info("[MCP OAuth] Updating status: %s", status_data)
             status_key = f"mcp_oauth_status:{task_id}"
             redis_client.setex(status_key, 600, json.dumps(status_data))
@@ -1213,8 +1208,8 @@ def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, An
             return {"success": True, "tools": tools, "tools_count": len(tools)}
         except Exception as e:
             error_msg = f"OAuth flow failed: {str(e)}"
-            logging.error(
-                "[MCP OAuth] Exception in OAuth discovery: %s", error_msg, exc_info=True
+            logging.exception(
+                "[MCP OAuth] Exception in OAuth discovery: %s", error_msg
             )
             update_status(
                 {
@@ -1230,8 +1225,8 @@ def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, An
             loop.close()
     except Exception as e:
         error_msg = f"Failed to initialize OAuth flow: {str(e)}"
-        logging.error(
-            "[MCP OAuth] Exception during initialization: %s", error_msg, exc_info=True
+        logging.exception(
+            "[MCP OAuth] Exception during initialization: %s", error_msg
         )
         update_status(
             {
@@ -1244,7 +1239,7 @@ def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, An
         return {"success": False, "error": error_msg}
 
 
-def mcp_oauth_status(self, task_id: str) -> Dict[str, Any]:
+def mcp_oauth_status(self, task_id: str) -> dict[str, Any]:
     """Check the status of an MCP OAuth flow."""
     redis_client = get_redis_instance()
     status_key = f"mcp_oauth_status:{task_id}"

@@ -26,6 +26,8 @@ from application.utils import (
     validate_required_fields,
 )
 
+# ruff: noqa: I001
+
 
 agents_ns = Namespace("agents", description="Agent management operations", path="/api")
 
@@ -98,7 +100,7 @@ class GetAgent(Resource):
             }
             return make_response(jsonify(data), 200)
         except Exception as e:
-            current_app.logger.error(f"Agent fetch error: {e}", exc_info=True)
+            current_app.logger.exception(f"Agent fetch error: {e}")
             return {"success": False}, 400
 
 
@@ -177,7 +179,7 @@ class GetAgents(Resource):
                 if "source" in agent or "retriever" in agent
             ]
         except Exception as err:
-            current_app.logger.error(f"Error retrieving agents: {err}", exc_info=True)
+            current_app.logger.exception(f"Error retrieving agents: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(list_agents), 200)
 
@@ -289,7 +291,7 @@ class CreateAgent(Resource):
                         ),
                         400,
                     )
-            except Exception as e:
+            except (ValueError, TypeError) as e:
                 return make_response(
                     jsonify(
                         {"success": False, "message": f"Invalid JSON schema: {str(e)}"}
@@ -411,7 +413,7 @@ class CreateAgent(Resource):
             resp = agents_collection.insert_one(new_agent)
             new_id = str(resp.inserted_id)
         except Exception as err:
-            current_app.logger.error(f"Error creating agent: {err}", exc_info=True)
+            current_app.logger.exception(f"Error creating agent: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": new_id, "key": key}), 201)
 
@@ -457,7 +459,7 @@ class UpdateAgent(Resource):
                 required=False, description="Token limit for the agent in limited mode"
             ),
             "limited_request_mode": fields.Boolean(
-                require=False,
+                required=False,
                 description="Whether the agent is in limited request mode",
             ),
             "request_limit": fields.Integer(
@@ -503,18 +505,14 @@ class UpdateAgent(Resource):
                                 400,
                             )
         except Exception as err:
-            current_app.logger.error(
-                f"Error parsing request data: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error parsing request data: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Invalid request data"}), 400
             )
         try:
             existing_agent = agents_collection.find_one({"_id": oid, "user": user})
         except Exception as err:
-            current_app.logger.error(
-                f"Error finding agent {agent_id}: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error finding agent {agent_id}: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Database error finding agent"}),
                 500,
@@ -839,9 +837,7 @@ class UpdateAgent(Resource):
                     200,
                 )
         except Exception as err:
-            current_app.logger.error(
-                f"Error updating agent {agent_id}: {err}", exc_info=True
-            )
+            current_app.logger.exception(f"Error updating agent {agent_id}: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Database error during update"}),
                 500,
@@ -879,7 +875,7 @@ class DeleteAgent(Resource):
                 )
             deleted_id = str(deleted_agent["_id"])
         except Exception as err:
-            current_app.logger.error(f"Error deleting agent: {err}", exc_info=True)
+            current_app.logger.exception(f"Error deleting agent: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify({"id": deleted_id}), 200)
 
@@ -954,7 +950,7 @@ class PinnedAgents(Resource):
                 if "source" in agent or "retriever" in agent
             ]
         except Exception as err:
-            current_app.logger.error(f"Error retrieving pinned agents: {err}")
+            current_app.logger.exception(f"Error retrieving pinned agents: {err}")
             return make_response(jsonify({"success": False}), 400)
         return make_response(jsonify(list_pinned_agents), 200)
 
@@ -976,7 +972,7 @@ class GetTemplateAgents(Resource):
             ]
             return make_response(jsonify(template_agents), 200)
         except Exception as e:
-            current_app.logger.error(f"Template agents fetch error: {e}", exc_info=True)
+            current_app.logger.exception(f"Template agents fetch error: {e}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -1019,7 +1015,7 @@ class AdoptAgent(Resource):
                 jsonify({"success": True, "agent": response_agent}), 200
             )
         except Exception as e:
-            current_app.logger.error(f"Agent adopt error: {e}", exc_info=True)
+            current_app.logger.exception(f"Agent adopt error: {e}")
             return make_response(jsonify({"success": False}), 400)
 
 
@@ -1059,7 +1055,7 @@ class PinAgent(Resource):
                 )
                 action = "pinned"
         except Exception as err:
-            current_app.logger.error(f"Error pinning/unpinning agent: {err}")
+            current_app.logger.exception(f"Error pinning/unpinning agent: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Server error"}), 500
             )
@@ -1105,7 +1101,7 @@ class RemoveSharedAgent(Resource):
 
             return make_response(jsonify({"success": True, "action": "removed"}), 200)
         except Exception as err:
-            current_app.logger.error(f"Error removing shared agent: {err}")
+            current_app.logger.exception(f"Error removing shared agent: {err}")
             return make_response(
                 jsonify({"success": False, "message": "Server error"}), 500
             )

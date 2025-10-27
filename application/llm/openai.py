@@ -244,8 +244,8 @@ class OpenAILLM(BaseLLM):
 
             return result
 
-        except Exception as e:
-            logging.error(f"Error preparing structured output format: {e}")
+        except Exception:
+            logging.exception("Error preparing structured output format")
             return None
 
     def get_supported_attachment_types(self):
@@ -314,10 +314,8 @@ class OpenAILLM(BaseLLM):
                             },
                         }
                     )
-                except Exception as e:
-                    logging.error(
-                        f"Error processing image attachment: {e}", exc_info=True
-                    )
+                except Exception:
+                    logging.exception("Error processing image attachment")
                     if "content" in attachment:
                         prepared_messages[user_message_index]["content"].append(
                             {
@@ -332,8 +330,8 @@ class OpenAILLM(BaseLLM):
                     prepared_messages[user_message_index]["content"].append(
                         {"type": "file", "file": {"file_id": file_id}}
                     )
-                except Exception as e:
-                    logging.error(f"Error uploading PDF to OpenAI: {e}", exc_info=True)
+                except Exception:
+                    logging.exception("Error uploading PDF to OpenAI")
                     if "content" in attachment:
                         prepared_messages[user_message_index]["content"].append(
                             {
@@ -406,8 +404,8 @@ class OpenAILLM(BaseLLM):
                 )
 
             return file_id
-        except Exception as e:
-            logging.error(f"Error uploading file to OpenAI: {e}", exc_info=True)
+        except Exception:
+            logging.exception("Error uploading file to OpenAI")
             raise
 
 
@@ -416,9 +414,9 @@ class AzureOpenAILLM(OpenAILLM):
     def __init__(self, api_key, user_api_key, *args, **kwargs):
 
         super().__init__(api_key)
-        self.api_base = (settings.OPENAI_API_BASE,)
-        self.api_version = (settings.OPENAI_API_VERSION,)
-        self.deployment_name = (settings.AZURE_DEPLOYMENT_NAME,)
+        self.api_base = settings.OPENAI_API_BASE
+        self.api_version = settings.OPENAI_API_VERSION
+        self.deployment_name = settings.AZURE_DEPLOYMENT_NAME
         from openai import AzureOpenAI
 
         self.client = AzureOpenAI(

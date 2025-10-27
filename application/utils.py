@@ -4,10 +4,9 @@ import re
 import uuid
 
 import tiktoken
+from application.core.settings import settings
 from flask import jsonify, make_response
 from werkzeug.utils import secure_filename
-
-from application.core.settings import settings
 
 
 _encoding = None
