@@ -2,9 +2,11 @@ import base64
 import json
 import logging
 
+from application.core.mongo_db import MongoDB
 from application.core.settings import settings
 from application.llm.base import BaseLLM
 from application.storage.storage_creator import StorageCreator
+from openai import AzureOpenAI
 
 
 class OpenAILLM(BaseLLM):
@@ -244,8 +246,8 @@ class OpenAILLM(BaseLLM):
 
             return result
 
-        except Exception as e:
-            logging.error(f"Error preparing structured output format: {e}")
+        except Exception:
+            logging.error("Error preparing structured output format", exc_info=True)
             return None
 
     def get_supported_attachment_types(self):
@@ -314,10 +316,8 @@ class OpenAILLM(BaseLLM):
                             },
                         }
                     )
-                except Exception as e:
-                    logging.error(
-                        f"Error processing image attachment: {e}", exc_info=True
-                    )
+                except Exception:
+                    logging.error("Error processing image attachment", exc_info=True)
                     if "content" in attachment:
                         prepared_messages[user_message_index]["content"].append(
                             {
@@ -332,8 +332,8 @@ class OpenAILLM(BaseLLM):
                     prepared_messages[user_message_index]["content"].append(
                         {"type": "file", "file": {"file_id": file_id}}
                     )
-                except Exception as e:
-                    logging.error(f"Error uploading PDF to OpenAI: {e}", exc_info=True)
+                except Exception:
+                    logging.error("Error uploading PDF to OpenAI", exc_info=True)
                     if "content" in attachment:
                         prepared_messages[user_message_index]["content"].append(
                             {
@@ -377,8 +377,6 @@ class OpenAILLM(BaseLLM):
         Returns:
             str: OpenAI file_id for the uploaded file.
         """
-        import logging
-
         if "openai_file_id" in attachment:
             return attachment["openai_file_id"]
 
@@ -395,8 +393,6 @@ class OpenAILLM(BaseLLM):
                 ).id,
             )
 
-            from application.core.mongo_db import MongoDB
-
             mongo = MongoDB.get_client()
             db = mongo[settings.MONGO_DB_NAME]
             attachments_collection = db["attachments"]
@@ -406,8 +402,8 @@ class OpenAILLM(BaseLLM):
                 )
 
             return file_id
-        except Exception as e:
-            logging.error(f"Error uploading file to OpenAI: {e}", exc_info=True)
+        except Exception:
+            logging.error("Error uploading file to OpenAI", exc_info=True)
             raise
 
 
@@ -419,7 +415,6 @@ class AzureOpenAILLM(OpenAILLM):
         self.api_base = (settings.OPENAI_API_BASE,)
         self.api_version = (settings.OPENAI_API_VERSION,)
         self.deployment_name = (settings.AZURE_DEPLOYMENT_NAME,)
-        from openai import AzureOpenAI
 
         self.client = AzureOpenAI(
             api_key=api_key,

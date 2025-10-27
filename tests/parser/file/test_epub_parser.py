@@ -1,8 +1,9 @@
+import sys
+import types
+
 import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
-import sys
-import types
 
 from application.parser.file.epub_parser import EpubParser
 
@@ -22,9 +23,8 @@ def test_epub_init_parser():
 
 def test_epub_parser_ebooklib_import_error(epub_parser):
     """Test that ImportError is raised when ebooklib is not available."""
-    with patch.dict(sys.modules, {"ebooklib": None}):
-        with pytest.raises(ValueError, match="`EbookLib` is required to read Epub files"):
-            epub_parser.parse_file(Path("test.epub"))
+    with patch.dict(sys.modules, {"ebooklib": None}), pytest.raises(ValueError, match="`EbookLib` is required to read Epub files"):
+        epub_parser.parse_file(Path("test.epub"))
 
 
 def test_epub_parser_html2text_import_error(epub_parser):

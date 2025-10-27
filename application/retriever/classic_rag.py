@@ -101,7 +101,7 @@ class ClassicRAG(BaseRetriever):
 
         try:
             rephrased_query = self.llm.gen(model=self.gpt_model, messages=messages)
-            print(f"Rephrased query: {rephrased_query}")
+            logging.info(f"Rephrased query: {rephrased_query}")
             return rephrased_query if rephrased_query else self.original_question
         except Exception as e:
             logging.error(f"Error rephrasing query: {e}", exc_info=True)

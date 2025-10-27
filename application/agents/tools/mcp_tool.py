@@ -3,17 +3,14 @@ import base64
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from urllib.parse import parse_qs, urlparse
 
 from application.agents.tools.base import Tool
 from application.api.user.tasks import mcp_oauth_status_task, mcp_oauth_task
 from application.cache import get_redis_instance
-
 from application.core.mongo_db import MongoDB
-
 from application.core.settings import settings
-
 from application.security.encryption import decrypt_credentials
 from fastmcp import Client
 from fastmcp.client.auth import BearerAuth
@@ -24,7 +21,6 @@ from fastmcp.client.transports import (
 )
 from mcp.client.auth import OAuthClientProvider, TokenStorage
 from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
-
 from pydantic import AnyHttpUrl, ValidationError
 from redis import Redis
 
@@ -110,7 +106,7 @@ class MCPTool(Tool):
 
     def _setup_client(self):
         """Setup FastMCP client with proper transport and authentication."""
-        global _mcp_clients_cache
+        nonlocal _mcp_clients_cache
         if self._cache_key in _mcp_clients_cache:
             cached_data = _mcp_clients_cache[self._cache_key]
             if time.time() - cached_data["created_at"] < 1800:
@@ -261,7 +257,7 @@ class MCPTool(Tool):
                 finally:
                     loop.close()
         except Exception as e:
-            print(f"Error occurred while running async operation: {e}")
+            logger.error("Error occurred while running async operation: %s", e)
             raise
 
     def discover_tools(self) -> List[Dict]:
@@ -280,7 +276,7 @@ class MCPTool(Tool):
             self.available_tools = tools
             return self.available_tools
         except Exception as e:
-            raise Exception(f"Failed to discover tools from MCP server: {str(e)}")
+            raise RuntimeError(f"Failed to discover tools from MCP server: {str(e)}") from e
 
     def execute_action(self, action_name: str, **kwargs) -> Any:
         """
@@ -294,7 +290,7 @@ class MCPTool(Tool):
             Result from the MCP server
         """
         if not self.server_url:
-            raise Exception("No MCP server configured")
+            raise RuntimeError("No MCP server configured")
         if not self._client:
             self._setup_client()
         cleaned_kwargs = {}
@@ -308,7 +304,7 @@ class MCPTool(Tool):
             )
             return self._format_result(result)
         except Exception as e:
-            raise Exception(f"Failed to execute action '{action_name}': {str(e)}")
+            raise RuntimeError(f"Failed to execute action '{action_name}': {str(e)}") from e
 
     def _format_result(self, result) -> Dict:
         """Format FastMCP result to match expected format."""
@@ -390,7 +386,7 @@ class MCPTool(Tool):
         try:
             task = mcp_oauth_task.delay(config=self.config, user=self.user_id)
             if not task:
-                raise Exception("Failed to start OAuth authentication")
+                raise RuntimeError("Failed to start OAuth authentication")
             return {
                 "success": True,
                 "requires_oauth": True,
@@ -646,7 +642,7 @@ class DocsGPTOAuth(OAuthClientProvider):
     async def redirect_handler(self, authorization_url: str) -> None:
         """Store auth URL and state in Redis for frontend to use."""
         auth_url, state = self._process_auth_url(authorization_url)
-        logging.info(
+        logger.info(
             "[DocsGPTOAuth] Processed auth_url: %s, state: %s", auth_url, state
         )
         self.auth_url = auth_url
@@ -655,7 +651,7 @@ class DocsGPTOAuth(OAuthClientProvider):
         if self.redis_client and self.extracted_state:
             key = f"{self.redis_prefix}auth_url:{self.extracted_state}"
             self.redis_client.setex(key, 600, auth_url)
-            logging.info("[DocsGPTOAuth] Stored auth_url in Redis: %s", key)
+            logger.info("[DocsGPTOAuth] Stored auth_url in Redis: %s", key)
 
             if self.task_id:
                 status_key = f"mcp_oauth_status:{self.task_id}"
@@ -672,7 +668,7 @@ class DocsGPTOAuth(OAuthClientProvider):
     async def callback_handler(self) -> tuple[str, str | None]:
         """Wait for auth code from Redis using the state value."""
         if not self.redis_client or not self.extracted_state:
-            raise Exception("Redis client or state not configured for OAuth")
+            raise RuntimeError("Redis client or state not configured for OAuth")
         poll_interval = 1
         max_wait_time = 300
         code_key = f"{self.redis_prefix}code:{self.extracted_state}"
@@ -722,11 +718,11 @@ class DocsGPTOAuth(OAuthClientProvider):
                 self.redis_client.delete(
                     f"{self.redis_prefix}state:{self.extracted_state}"
                 )
-                raise Exception(f"OAuth error: {error_msg}")
+                raise RuntimeError(f"OAuth error: {error_msg}")
             await asyncio.sleep(poll_interval)
         self.redis_client.delete(f"{self.redis_prefix}auth_url:{self.extracted_state}")
         self.redis_client.delete(f"{self.redis_prefix}state:{self.extracted_state}")
-        raise Exception("OAuth callback timeout: no code received within 5 minutes")
+        raise RuntimeError("OAuth callback timeout: no code received within 5 minutes")
 
 
 class DBTokenStorage(TokenStorage):
@@ -765,7 +761,7 @@ class DBTokenStorage(TokenStorage):
             {"$set": {"tokens": tokens.model_dump()}},
             True,
         )
-        logging.info(f"Saved tokens for {self.get_base_url(self.server_url)}")
+        logger.info("Saved tokens for %s", self.get_base_url(self.server_url))
 
     async def get_client_info(self) -> OAuthClientInformationFull | None:
         doc = await asyncio.to_thread(self.collection.find_one, self.get_db_key())
@@ -786,7 +782,7 @@ class DBTokenStorage(TokenStorage):
                 return None
             return client_info
         except ValidationError as e:
-            logging.error(f"Could not load client info: {e}")
+            logger.error("Could not load client info: %s", e)
             return None
 
     def _serialize_client_info(self, info: dict) -> dict:
@@ -802,17 +798,17 @@ class DBTokenStorage(TokenStorage):
             {"$set": {"client_info": serialized_info}},
             True,
         )
-        logging.info(f"Saved client info for {self.get_base_url(self.server_url)}")
+        logger.info("Saved client info for %s", self.get_base_url(self.server_url))
 
     async def clear(self) -> None:
         await asyncio.to_thread(self.collection.delete_one, self.get_db_key())
-        logging.info(f"Cleared OAuth cache for {self.get_base_url(self.server_url)}")
+        logger.info("Cleared OAuth cache for %s", self.get_base_url(self.server_url))
 
     @classmethod
     async def clear_all(cls, db_client) -> None:
         collection = db_client["connector_sessions"]
         await asyncio.to_thread(collection.delete_many, {})
-        logging.info("Cleared all OAuth client cache data.")
+        logger.info("Cleared all OAuth client cache data.")
 
 
 class MCPOAuthManager:
@@ -838,11 +834,11 @@ class MCPOAuthManager:
         """
         try:
             if not self.redis_client or not state:
-                raise Exception("Redis client or state not provided")
+                raise RuntimeError("Redis client or state not provided")
             if error:
                 error_key = f"{self.redis_prefix}error:{state}"
                 self.redis_client.setex(error_key, 300, error)
-                raise Exception(f"OAuth error received: {error}")
+                raise RuntimeError(f"OAuth error received: {error}")
             code_key = f"{self.redis_prefix}code:{state}"
             self.redis_client.setex(code_key, 300, code)
 
@@ -851,7 +847,7 @@ class MCPOAuthManager:
 
             return True
         except Exception as e:
-            logging.error(f"Error handling OAuth callback: {e}")
+            logger.error("Error handling OAuth callback: %s", e)
             return False
 
     def get_oauth_status(self, task_id: str) -> Dict[str, Any]:

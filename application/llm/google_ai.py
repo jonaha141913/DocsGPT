@@ -1,13 +1,12 @@
 import json
 import logging
 
-from google import genai
-from google.genai import types
-
 from application.core.settings import settings
-
 from application.llm.base import BaseLLM
 from application.storage.storage_creator import StorageCreator
+
+from google import genai
+from google.genai import types
 
 
 class GoogleLLM(BaseLLM):
@@ -82,7 +81,8 @@ class GoogleLLM(BaseLLM):
                     )
                     files.append({"file_uri": file_uri, "mime_type": mime_type})
                 except Exception as e:
-                    logging.error(
+                    logger = logging.getLogger(__name__)
+                    logger.error(
                         f"GoogleLLM: Error uploading file: {e}", exc_info=True
                     )
                     if "content" in attachment:
@@ -139,7 +139,8 @@ class GoogleLLM(BaseLLM):
 
             return file_uri
         except Exception as e:
-            logging.error(f"Error uploading file to Google AI: {e}", exc_info=True)
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error uploading file to Google AI: {e}", exc_info=True)
             raise
 
     def _clean_messages_google(self, messages):
@@ -367,7 +368,8 @@ class GoogleLLM(BaseLLM):
             if has_attachments:
                 break
 
-        logging.info(
+        logger = logging.getLogger(__name__)
+        logger.info(
             f"GoogleLLM: Starting stream generation. Model: {model}, Messages: {json.dumps(messages, default=str)}, Has attachments: {has_attachments}"
         )
 

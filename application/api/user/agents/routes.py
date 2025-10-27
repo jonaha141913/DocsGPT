@@ -258,7 +258,7 @@ class CreateAgent(Resource):
                     data["json_schema"] = json.loads(data["json_schema"])
                 except json.JSONDecodeError:
                     data["json_schema"] = None
-        print(f"Received data: {data}")
+        current_app.logger.info(f"Received data: {data}")
 
         # Validate JSON schema if provided
 
@@ -289,7 +289,7 @@ class CreateAgent(Resource):
                         ),
                         400,
                     )
-            except Exception as e:
+            except (json.JSONDecodeError, ValueError) as e:
                 return make_response(
                     jsonify(
                         {"success": False, "message": f"Invalid JSON schema: {str(e)}"}

@@ -1,7 +1,8 @@
 import types
 
-import pytest
 from application.llm.openai import OpenAILLM
+
+import pytest
 
 
 class FakeChatCompletions:
@@ -37,8 +38,7 @@ class FakeChatCompletions:
             return self._choices
 
         def __iter__(self):
-            for line in self._lines:
-                yield line
+            yield from self._lines
 
     def create(self, **kwargs):
         self.last_kwargs = kwargs

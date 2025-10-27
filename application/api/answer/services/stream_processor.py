@@ -3,10 +3,9 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from bson.dbref import DBRef
-
 from bson.objectid import ObjectId
 
 from application.agents.agent_creator import AgentCreator
@@ -139,6 +138,7 @@ class StreamProcessor:
                 logger.error(
                     f"Error retrieving attachment {attachment_id}: {e}", exc_info=True
                 )
+                continue
         return attachments
 
     def _get_agent_key(self, agent_id: Optional[str], user_id: Optional[str]) -> tuple:
@@ -173,7 +173,7 @@ class StreamProcessor:
     def _get_data_from_api_key(self, api_key: str) -> Dict[str, Any]:
         data = self.agents_collection.find_one({"key": api_key})
         if not data:
-            raise Exception("Invalid API Key, please generate a new key", 401)
+            raise ValueError("Invalid API Key, please generate a new key")
         source = data.get("source")
         if isinstance(source, DBRef):
             source_doc = self.db.dereference(source)
@@ -430,7 +430,7 @@ class StreamProcessor:
 
             return tools_data if tools_data else None
         except Exception as e:
-            logger.warning(f"Failed to pre-fetch tools: {str(e)}")
+            logger.warning(f"Failed to pre-fetch tools: {str(e)}", exc_info=True)
             return None
 
     def _fetch_memory_tool_data(
@@ -452,7 +452,7 @@ class StreamProcessor:
 
             return {"root": root_view, "available": True}
         except Exception as e:
-            logger.warning(f"Failed to fetch memory tool data: {str(e)}")
+            logger.warning(f"Failed to fetch memory tool data: {str(e)}", exc_info=True)
             return None
 
     def create_agent(

@@ -1,8 +1,8 @@
-import logging
-import uuid
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+import logging
+import uuid
+from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +180,7 @@ class NamespaceManager:
                 # Always include namespace, even if empty, to prevent undefined errors
                 context[namespace_name] = namespace_context if namespace_context else {}
             except Exception as e:
-                logger.error(f"Failed to build {namespace_name} namespace: {str(e)}")
+                logger.exception(f"Failed to build {namespace_name} namespace: {str(e)}")
                 # Include empty namespace on error to prevent template failures
                 context[namespace_name] = {}
         return context
