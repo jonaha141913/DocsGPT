@@ -97,6 +97,7 @@ class AnswerResource(Resource, BaseAnswerResource):
                 isNoneDoc=data.get("isNoneDoc"),
                 index=None,
                 should_save_conversation=data.get("save_conversation", True),
+                retriever=data.get("retriever"),
             )
             stream_result = self.process_response_stream(stream)
 
