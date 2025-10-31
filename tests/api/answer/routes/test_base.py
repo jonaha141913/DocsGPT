@@ -31,7 +31,7 @@ class TestBaseAnswerValidation:
 
             assert result is not None
             assert result.status_code == 400
-            assert "question" in result.json["message"].lower()
+            assert "question" in result.json.get("message", "").lower()
 
     def test_validate_with_conversation_id_required(self, mock_mongo_db, flask_app):
         from application.api.answer.routes.base import BaseAnswerResource
@@ -44,7 +44,7 @@ class TestBaseAnswerValidation:
 
             assert result is not None
             assert result.status_code == 400
-            assert "conversation_id" in result.json["message"].lower()
+            assert "conversation_id" in result.json.get("message", "").lower()
 
     def test_validate_passes_with_all_required_fields(self, mock_mongo_db, flask_app):
         from application.api.answer.routes.base import BaseAnswerResource
@@ -82,8 +82,8 @@ class TestUsageChecking:
 
             assert result is not None
             assert result.status_code == 401
-            assert result.json["success"] is False
-            assert "invalid" in result.json["message"].lower()
+            assert result.json.get("success") is False
+            assert "invalid" in result.json.get("message", "").lower()
 
     def test_checks_token_limit_when_enabled(self, mock_mongo_db, flask_app):
         from application.api.answer.routes.base import BaseAnswerResource
@@ -186,7 +186,7 @@ class TestUsageChecking:
                     "api_key": "test_key",
                     "prompt_tokens": 60,
                     "generated_tokens": 50,
-                    "timestamp": datetime.datetime.now(),
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc),
                 }
             )
 
@@ -197,8 +197,8 @@ class TestUsageChecking:
 
             assert result is not None
             assert result.status_code == 429
-            assert result.json["success"] is False
-            assert "usage limit" in result.json["message"].lower()
+            assert result.json.get("success") is False
+            assert "usage limit" in result.json.get("message", "").lower()
 
     def test_exceeds_request_limit(self, mock_mongo_db, flask_app):
         from application.api.answer.routes.base import BaseAnswerResource
@@ -221,7 +221,7 @@ class TestUsageChecking:
                 }
             )
 
-            now = datetime.datetime.now()
+            now = datetime.datetime.now(datetime.timezone.utc)
             for i in range(3):
                 token_usage_collection.insert_one(
                     {
@@ -239,7 +239,7 @@ class TestUsageChecking:
 
             assert result is not None
             assert result.status_code == 429
-            assert result.json["success"] is False
+            assert result.json.get("success") is False
 
     def test_both_limits_disabled_returns_none(self, mock_mongo_db, flask_app):
         from application.api.answer.routes.base import BaseAnswerResource

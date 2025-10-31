@@ -1,7 +1,6 @@
-from unittest.mock import Mock
-
 import pytest
 from bson import ObjectId
+from unittest.mock import Mock
 
 
 @pytest.mark.unit
@@ -13,7 +12,7 @@ class TestConversationServiceGet:
         )
 
         service = ConversationService()
-        result = service.get_conversation("", "user_123")
+        service.get_conversation("", "user_123")
 
         assert result is None
 
@@ -23,7 +22,7 @@ class TestConversationServiceGet:
         )
 
         service = ConversationService()
-        result = service.get_conversation(str(ObjectId()), "")
+        service.get_conversation(str(ObjectId()), "")
 
         assert result is None
 
@@ -97,7 +96,6 @@ class TestConversationServiceSave:
         )
 
         service = ConversationService()
-        mock_llm = Mock()
 
         with pytest.raises(ValueError, match="User ID not found"):
             service.save_conversation(
@@ -107,7 +105,7 @@ class TestConversationServiceSave:
                 thought="",
                 sources=[],
                 tool_calls=[],
-                llm=mock_llm,
+                llm=Mock(),
                 gpt_model="gpt-4",
                 decoded_token={},  # No 'sub' key
             )
@@ -122,9 +120,6 @@ class TestConversationServiceSave:
         service = ConversationService()
         collection = mock_mongo_db[settings.MONGO_DB_NAME]["conversations"]
 
-        mock_llm = Mock()
-        mock_llm.gen.return_value = "Test Summary"
-
         long_text = "x" * 2000
         sources = [{"text": long_text, "title": "Doc"}]
 
@@ -135,7 +130,7 @@ class TestConversationServiceSave:
             thought="",
             sources=sources,
             tool_calls=[],
-            llm=mock_llm,
+            llm=Mock(),
             gpt_model="gpt-4",
             decoded_token={"sub": "user_123"},
         )
@@ -156,9 +151,6 @@ class TestConversationServiceSave:
         service = ConversationService()
         collection = mock_mongo_db[settings.MONGO_DB_NAME]["conversations"]
 
-        mock_llm = Mock()
-        mock_llm.gen.return_value = "Python Basics"
-
         conv_id = service.save_conversation(
             conversation_id=None,
             question="What is Python?",
@@ -166,7 +158,7 @@ class TestConversationServiceSave:
             thought="",
             sources=[],
             tool_calls=[],
-            llm=mock_llm,
+            llm=Mock(),
             gpt_model="gpt-4",
             decoded_token={"sub": "user_123"},
         )
@@ -198,8 +190,6 @@ class TestConversationServiceSave:
             }
         )
 
-        mock_llm = Mock()
-
         result = service.save_conversation(
             conversation_id=str(existing_conv_id),
             question="Q2",
@@ -207,7 +197,7 @@ class TestConversationServiceSave:
             thought="",
             sources=[],
             tool_calls=[],
-            llm=mock_llm,
+            llm=Mock(),
             gpt_model="gpt-4",
             decoded_token={"sub": "user_123"},
         )
@@ -226,8 +216,6 @@ class TestConversationServiceSave:
         conv_id = ObjectId()
         collection.insert_one({"_id": conv_id, "user": "owner_123", "queries": []})
 
-        mock_llm = Mock()
-
         with pytest.raises(ValueError, match="not found or unauthorized"):
             service.save_conversation(
                 conversation_id=str(conv_id),
@@ -236,7 +224,7 @@ class TestConversationServiceSave:
                 thought="",
                 sources=[],
                 tool_calls=[],
-                llm=mock_llm,
+                llm=Mock(),
                 gpt_model="gpt-4",
                 decoded_token={"sub": "hacker_456"},
             )

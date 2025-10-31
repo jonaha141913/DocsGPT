@@ -1,5 +1,6 @@
-import pytest
 from bson import ObjectId
+
+import pytest
 
 
 @pytest.mark.unit
@@ -196,11 +197,8 @@ class TestStreamProcessorAgentConfiguration:
 
         processor = StreamProcessor(request_data, None)
 
-        try:
+        with pytest.raises(Exception, match="Invalid API Key"):
             processor._configure_agent()
-            assert processor.agent_config is not None
-        except Exception as e:
-            assert "Invalid API Key" in str(e)
 
     def test_uses_default_config_without_api_key(self, mock_mongo_db):
         from application.api.answer.services.stream_processor import StreamProcessor
@@ -516,9 +514,10 @@ class TestToolPreFetch:
 
     def test_prefetch_with_multiple_same_name_tools(self, mock_mongo_db):
         """Test that multiple tools with the same name can be distinguished by ID"""
+        from unittest.mock import MagicMock, patch
+
         from application.api.answer.services.stream_processor import StreamProcessor
         from application.core.settings import settings
-        from unittest.mock import patch, MagicMock
 
         tools_collection = mock_mongo_db[settings.MONGO_DB_NAME]["user_tools"]
 

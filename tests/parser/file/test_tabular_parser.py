@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import MagicMock, mock_open, patch
 
 from application.parser.file.tabular_parser import CSVParser, PandasCSVParser, ExcelParser
 

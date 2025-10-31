@@ -9,25 +9,25 @@ from langchain.docstore.document import Document as LCDocument
 
 @pytest.fixture
 def web_loader():
-    return WebLoader()
+    with WebLoader() as web_loader:
+        return web_loader
 
 
 @pytest.fixture
 def mock_langchain_document():
     """Create a mock LangChain document."""
-    doc = MagicMock(spec=LCDocument)
-    doc.page_content = "Test web page content"
-    doc.metadata = {"source": "https://example.com", "title": "Test Page"}
-    return doc
+    with MagicMock(spec=LCDocument) as doc:
+        doc.page_content = "Test web page content"
+        doc.metadata = {"source": "https://example.com", "title": "Test Page"}
+        return doc
 
 
 @pytest.fixture
 def mock_web_base_loader():
     """Create a mock WebBaseLoader class."""
-    mock_loader_class = MagicMock()
-    mock_loader_instance = MagicMock()
-    mock_loader_class.return_value = mock_loader_instance
-    return mock_loader_class, mock_loader_instance
+    with MagicMock() as mock_loader_class, MagicMock() as mock_loader_instance:
+        mock_loader_class.return_value = mock_loader_instance
+        return mock_loader_class, mock_loader_instance
 
 
 class TestWebLoaderInitialization:
@@ -75,7 +75,8 @@ class TestWebLoaderLoadData:
         mock_web_base_loader_class = MagicMock()
         mock_web_base_loader_class.return_value = mock_loader_instance
 
-        web_loader.loader = mock_web_base_loader_class
+        with mock_web_base_loader_class() as loader:
+            web_loader.loader = loader
 
         result = web_loader.load_data("https://example.com")
 
@@ -108,7 +109,8 @@ class TestWebLoaderLoadData:
         mock_web_base_loader_class = MagicMock()
         mock_web_base_loader_class.side_effect = [mock_loader_instance1, mock_loader_instance2]
 
-        web_loader.loader = mock_web_base_loader_class
+        with mock_web_base_loader_class() as loader:
+            web_loader.loader = loader
 
         urls = ["https://site1.com", "https://site2.com"]
         result = web_loader.load_data(urls)
@@ -132,7 +134,8 @@ class TestWebLoaderLoadData:
         mock_web_base_loader_class = MagicMock()
         mock_web_base_loader_class.return_value = mock_loader_instance
 
-        web_loader.loader = mock_web_base_loader_class
+        with mock_web_base_loader_class() as loader:
+            web_loader.loader = loader
 
         result = web_loader.load_data("example.com")
 
@@ -150,7 +153,8 @@ class TestWebLoaderLoadData:
         mock_web_base_loader_class = MagicMock()
         mock_web_base_loader_class.return_value = mock_loader_instance
 
-        web_loader.loader = mock_web_base_loader_class
+        with mock_web_base_loader_class() as loader:
+            web_loader.loader = loader
 
         result = web_loader.load_data("https://example.com")
 
@@ -175,7 +179,8 @@ class TestWebLoaderLoadData:
         mock_web_base_loader_class = MagicMock()
         mock_web_base_loader_class.return_value = mock_loader_instance
 
-        web_loader.loader = mock_web_base_loader_class
+        with mock_web_base_loader_class() as loader:
+            web_loader.loader = loader
 
         result = web_loader.load_data("https://example.com")
 
@@ -198,7 +203,8 @@ class TestWebLoaderErrorHandling:
         mock_web_base_loader_class = MagicMock()
         mock_web_base_loader_class.return_value = mock_loader_instance
 
-        web_loader.loader = mock_web_base_loader_class
+        with mock_web_base_loader_class() as loader:
+            web_loader.loader = loader
 
         result = web_loader.load_data("https://invalid-url.com")
 
@@ -224,7 +230,8 @@ class TestWebLoaderErrorHandling:
         mock_web_base_loader_class = MagicMock()
         mock_web_base_loader_class.side_effect = [mock_loader_instance1, mock_loader_instance2]
 
-        web_loader.loader = mock_web_base_loader_class
+        with mock_web_base_loader_class() as loader:
+            web_loader.loader = loader
 
         urls = ["https://good-url.com", "https://bad-url.com"]
         result = web_loader.load_data(urls)

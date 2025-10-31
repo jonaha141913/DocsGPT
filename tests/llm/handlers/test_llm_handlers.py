@@ -123,37 +123,36 @@ class TestLLMHandler:
         )
         assert result == messages
 
-    @patch("application.llm.handlers.base.logger")
-    def test_prepare_messages_with_unsupported_attachments(self, mock_logger):
-        handler = ConcreteHandler()
-        messages = [{"role": "user", "content": "Hello"}]
-        attachments = [{"mime_type": "text/plain", "path": "/test.txt"}]
-
-        mock_agent = Mock()
-        mock_agent.llm.get_supported_attachment_types.return_value = ["image/png"]
-
-        with patch.object(
-            handler, "_append_unsupported_attachments", return_value=messages
+    def test_prepare_messages_with_unsupported_attachments(self):
+        with patch("application.llm.handlers.base.logger") as mock_logger, patch.object(
+            ConcreteHandler, "_append_unsupported_attachments", return_value=messages
         ) as mock_append:
+            handler = ConcreteHandler()
+            messages = [{"role": "user", "content": "Hello"}]
+            attachments = [{"mime_type": "text/plain", "path": "/test.txt"}]
+
+            mock_agent = Mock()
+            mock_agent.llm.get_supported_attachment_types.return_value = ["image/png"]
+
             result = handler.prepare_messages(mock_agent, messages, attachments)
             mock_append.assert_called_once_with(messages, attachments)
             assert result == messages
 
     def test_prepare_messages_mixed_attachments(self):
-        handler = ConcreteHandler()
-        messages = [{"role": "user", "content": "Hello"}]
-        attachments = [
-            {"mime_type": "image/png", "path": "/test.png"},
-            {"mime_type": "text/plain", "path": "/test.txt"},
-        ]
-
-        mock_agent = Mock()
-        mock_agent.llm.get_supported_attachment_types.return_value = ["image/png"]
-        mock_agent.llm.prepare_messages_with_attachments.return_value = messages
-
         with patch.object(
-            handler, "_append_unsupported_attachments", return_value=messages
+            ConcreteHandler, "_append_unsupported_attachments", return_value=messages
         ) as mock_append:
+            handler = ConcreteHandler()
+            messages = [{"role": "user", "content": "Hello"}]
+            attachments = [
+                {"mime_type": "image/png", "path": "/test.png"},
+                {"mime_type": "text/plain", "path": "/test.txt"},
+            ]
+
+            mock_agent = Mock()
+            mock_agent.llm.get_supported_attachment_types.return_value = ["image/png"]
+            mock_agent.llm.prepare_messages_with_attachments.return_value = messages
+
             result = handler.prepare_messages(mock_agent, messages, attachments)
 
             mock_agent.llm.prepare_messages_with_attachments.assert_called_once()

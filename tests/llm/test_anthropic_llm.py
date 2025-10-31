@@ -1,6 +1,6 @@
-import sys
 import types
 import pytest
+import sys
 
 class _FakeCompletion:
     def __init__(self, text):

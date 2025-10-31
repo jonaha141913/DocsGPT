@@ -13,8 +13,8 @@ class TestTimeRangeGenerators:
     def test_generate_minute_range(self):
         from application.api.user.base import generate_minute_range
 
-        start = datetime.datetime(2024, 1, 1, 10, 0, 0)
-        end = datetime.datetime(2024, 1, 1, 10, 5, 0)
+        start = datetime.datetime(2024, 1, 1, 10, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2024, 1, 1, 10, 5, 0, tzinfo=datetime.timezone.utc)
 
         result = generate_minute_range(start, end)
 
@@ -26,8 +26,8 @@ class TestTimeRangeGenerators:
     def test_generate_hourly_range(self):
         from application.api.user.base import generate_hourly_range
 
-        start = datetime.datetime(2024, 1, 1, 10, 0, 0)
-        end = datetime.datetime(2024, 1, 1, 15, 0, 0)
+        start = datetime.datetime(2024, 1, 1, 10, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2024, 1, 1, 15, 0, 0, tzinfo=datetime.timezone.utc)
 
         result = generate_hourly_range(start, end)
 
@@ -52,7 +52,7 @@ class TestTimeRangeGenerators:
     def test_single_minute_range(self):
         from application.api.user.base import generate_minute_range
 
-        time = datetime.datetime(2024, 1, 1, 10, 30, 0)
+        time = datetime.datetime(2024, 1, 1, 10, 30, 0, tzinfo=datetime.timezone.utc)
         result = generate_minute_range(time, time)
 
         assert len(result) == 1
@@ -240,7 +240,7 @@ class TestHandleImageUpload:
     def test_handles_upload_error(self, flask_app):
         from application.api.user.base import handle_image_upload
 
-        with flask_app.app_context():
+        with flask_app.app_context:
             mock_file = FileStorage(stream=io.BytesIO(b"data"), filename="test.png")
             mock_request = Mock()
             mock_request.files = {"image": mock_file}
@@ -263,7 +263,7 @@ class TestRequireAgentDecorator:
         from application.api.user.base import require_agent
         from application.core.settings import settings
 
-        with flask_app.app_context():
+        with flask_app.app_context:
             agents_collection = mock_mongo_db[settings.MONGO_DB_NAME]["agents"]
             agent_id = ObjectId()
             webhook_token = "valid_webhook_token_123"
@@ -283,7 +283,7 @@ class TestRequireAgentDecorator:
     def test_returns_400_for_missing_token(self, mock_mongo_db, flask_app):
         from application.api.user.base import require_agent
 
-        with flask_app.app_context():
+        with flask_app.app_context:
 
             @require_agent
             def test_func(webhook_token=None, agent=None, agent_id_str=None):
@@ -298,7 +298,7 @@ class TestRequireAgentDecorator:
     def test_returns_404_for_invalid_token(self, mock_mongo_db, flask_app):
         from application.api.user.base import require_agent
 
-        with flask_app.app_context():
+        with flask_app.app_context:
 
             @require_agent
             def test_func(webhook_token=None, agent=None, agent_id_str=None):

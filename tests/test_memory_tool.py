@@ -1,4 +1,5 @@
 import pytest
+
 from application.agents.tools.memory import MemoryTool
 from application.core.settings import settings
 
@@ -46,9 +47,9 @@ def memory_tool(monkeypatch) -> MemoryTool:
 
                         del self.docs[doc_id]
                         old_doc["_id"] = new_key
-                        self.docs[new_key] = old_doc
+                        self.docs.update({new_key: old_doc})
                     else:
-                        self.docs[doc_id] = old_doc
+                        self.docs.update({doc_id: old_doc})
                 return type("res", (), {"modified_count": 1})
             # Handle query by user_id, tool_id, path
 
@@ -60,13 +61,15 @@ def memory_tool(monkeypatch) -> MemoryTool:
             if key not in self.docs and not upsert:
                 return type("res", (), {"modified_count": 0})
             if key not in self.docs and upsert:
-                self.docs[key] = {
-                    "user_id": user_id,
-                    "tool_id": tool_id,
-                    "path": path,
-                    "content": "",
-                    "_id": key,
-                }
+                self.docs.update({
+                    key: {
+                        "user_id": user_id,
+                        "tool_id": tool_id,
+                        "path": path,
+                        "content": "",
+                        "_id": key,
+                    }
+                })
             if "$set" in u:
                 self.docs[key].update(u["$set"])
             return type("res", (), {"modified_count": 1})
@@ -94,13 +97,15 @@ def memory_tool(monkeypatch) -> MemoryTool:
 
                 pattern = regex_pattern.replace("\\", "").lstrip("^")
 
-                for key, doc in self.docs.items():
+                for key in self.docs.keys():
+                    doc = self.docs[key]
                     if doc.get("user_id") == user_id and doc.get("tool_id") == tool_id:
                         doc_path = doc.get("path", "")
                         if doc_path.startswith(pattern):
                             results.append(doc)
             else:
-                for key, doc in self.docs.items():
+                for key in self.docs.keys():
+                    doc = self.docs[key]
                     if doc.get("user_id") == user_id and doc.get("tool_id") == tool_id:
                         results.append(doc)
             return results
@@ -128,7 +133,8 @@ def memory_tool(monkeypatch) -> MemoryTool:
                 pattern = regex_pattern.replace("\\", "").lstrip("^")
 
                 keys_to_delete = []
-                for key, doc in self.docs.items():
+                for key in self.docs.keys():
+                    doc = self.docs[key]
                     if doc.get("user_id") == user_id and doc.get("tool_id") == tool_id:
                         doc_path = doc.get("path", "")
                         if doc_path.startswith(pattern):
@@ -141,8 +147,8 @@ def memory_tool(monkeypatch) -> MemoryTool:
 
                 keys_to_delete = [
                     key
-                    for key, doc in self.docs.items()
-                    if doc.get("user_id") == user_id and doc.get("tool_id") == tool_id
+                    for key in self.docs.keys()
+                    if self.docs[key].get("user_id") == user_id and self.docs[key].get("tool_id") == tool_id
                 ]
                 for key in keys_to_delete:
                     del self.docs[key]
@@ -500,7 +506,7 @@ def test_memory_tool_isolation(monkeypatch) -> None:
             tool_id = doc.get("tool_id")
             path = doc.get("path")
             key = f"{user_id}:{tool_id}:{path}"
-            self.docs[key] = doc
+            self.docs.update({key: doc})
             return type("res", (), {"inserted_id": key})
 
         def update_one(self, q, u, upsert=False):
@@ -641,6 +647,7 @@ def test_paths_without_leading_slash(memory_tool) -> None:
         path="cat_breeds.txt",
         file_text="- Korat\n- Chartreux\n- British Shorthair\n- Nebelung",
     )
+    memory_tool.execute_action("create", path="cat_breeds.txt", file_text="- Korat\n- Chartreux\n- British Shorthair\n- Nebelung")
     assert "created" in result.lower()
 
     # View file without leading slash
@@ -681,6 +688,10 @@ def test_rename_directory(memory_tool: MemoryTool) -> None:
     memory_tool.execute_action(
         "create", path="/docs/sub/file2.txt", file_text="Content 2"
     )
+    memory_tool.execute_action("create", path="/docs/file1.txt", file_text="Content 1")
+    memory_tool.execute_action("create", path="/docs/sub/file2.txt", file_text="Content 2")
+    memory_tool.execute_action("create", path="/docs/file1.txt", file_text="Content 1")
+    memory_tool.execute_action("create", path="/docs/sub/file2.txt", file_text="Content 2")
 
     # Rename directory (with trailing slash)
 
@@ -741,6 +752,7 @@ def test_view_file_line_numbers(memory_tool: MemoryTool) -> None:
     # Create a multiline file
 
     content = "Line 1\nLine 2\nLine 3\nLine 4\nLine 5"
+    memory_tool.execute_action("create", path="/numbered.txt", file_text=content)
     memory_tool.execute_action("create", path="/numbered.txt", file_text=content)
 
     # View lines 2-4
