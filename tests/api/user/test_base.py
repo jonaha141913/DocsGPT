@@ -1,9 +1,9 @@
 import datetime
 import io
-from unittest.mock import Mock, patch
 
 import pytest
 from bson import ObjectId
+from unittest.mock import Mock, patch
 from werkzeug.datastructures import FileStorage
 
 
@@ -13,8 +13,8 @@ class TestTimeRangeGenerators:
     def test_generate_minute_range(self):
         from application.api.user.base import generate_minute_range
 
-        start = datetime.datetime(2024, 1, 1, 10, 0, 0)
-        end = datetime.datetime(2024, 1, 1, 10, 5, 0)
+        start = datetime.datetime(2024, 1, 1, 10, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2024, 1, 1, 10, 5, 0, tzinfo=datetime.timezone.utc)
 
         result = generate_minute_range(start, end)
 
@@ -26,8 +26,8 @@ class TestTimeRangeGenerators:
     def test_generate_hourly_range(self):
         from application.api.user.base import generate_hourly_range
 
-        start = datetime.datetime(2024, 1, 1, 10, 0, 0)
-        end = datetime.datetime(2024, 1, 1, 15, 0, 0)
+        start = datetime.datetime(2024, 1, 1, 10, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2024, 1, 1, 15, 0, 0, tzinfo=datetime.timezone.utc)
 
         result = generate_hourly_range(start, end)
 
@@ -52,7 +52,7 @@ class TestTimeRangeGenerators:
     def test_single_minute_range(self):
         from application.api.user.base import generate_minute_range
 
-        time = datetime.datetime(2024, 1, 1, 10, 30, 0)
+        time = datetime.datetime(2024, 1, 1, 10, 30, 0, tzinfo=datetime.timezone.utc)
         result = generate_minute_range(time, time)
 
         assert len(result) == 1
@@ -136,6 +136,7 @@ class TestResolveToolDetails:
         assert result[0]["name"] == "calculator"
         assert result[0]["display_name"] == "Calculator Tool"
         assert result[1]["name"] == "weather"
+        assert result[1]["display_name"] == "Weather API"
 
     def test_handles_missing_display_name(self, mock_mongo_db):
         from application.api.user.base import resolve_tool_details

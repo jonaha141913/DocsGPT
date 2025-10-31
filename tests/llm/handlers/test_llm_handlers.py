@@ -1,4 +1,5 @@
-from typing import Any, Dict, Generator
+from collections.abc import Generator
+from typing import Any
 from unittest.mock import Mock, patch
 
 from application.llm.handlers.base import LLMHandler, LLMResponse, ToolCall
@@ -191,15 +192,16 @@ class TestLLMHandler:
         messages = [{"role": "user", "content": "Hello"}]
 
         def mock_generator():
-            yield "chunk1"
-            yield "chunk2"
+            yield from ["chunk1", "chunk2"]
 
-        with patch.object(
-            handler, "prepare_messages", return_value=messages
-        ) as mock_prepare:
-            with patch.object(
+        with (
+            patch.object(
+                handler, "prepare_messages", return_value=messages
+            ) as mock_prepare,
+            patch.object(
                 handler, "handle_streaming", return_value=mock_generator()
-            ) as mock_handle:
+            ) as mock_handle,
+        ):
                 result = handler.process_message_flow(
                     mock_agent, initial_response, tools_dict, messages, stream=True
                 )

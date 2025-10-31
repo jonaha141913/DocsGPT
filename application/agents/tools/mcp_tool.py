@@ -280,7 +280,7 @@ class MCPTool(Tool):
             self.available_tools = tools
             return self.available_tools
         except Exception as e:
-            raise Exception(f"Failed to discover tools from MCP server: {str(e)}")
+            raise RuntimeError(f"Failed to discover tools from MCP server: {str(e)}")
 
     def execute_action(self, action_name: str, **kwargs) -> Any:
         """
@@ -308,7 +308,7 @@ class MCPTool(Tool):
             )
             return self._format_result(result)
         except Exception as e:
-            raise Exception(f"Failed to execute action '{action_name}': {str(e)}")
+            raise RuntimeError(f"Failed to execute action '{action_name}': {str(e)}")
 
     def _format_result(self, result) -> Dict:
         """Format FastMCP result to match expected format."""
@@ -390,7 +390,7 @@ class MCPTool(Tool):
         try:
             task = mcp_oauth_task.delay(config=self.config, user=self.user_id)
             if not task:
-                raise Exception("Failed to start OAuth authentication")
+                raise RuntimeError("Failed to start OAuth authentication")
             return {
                 "success": True,
                 "requires_oauth": True,
@@ -569,10 +569,10 @@ class DocsGPTOAuth(OAuthClientProvider):
         redirect_uri: str,
         redis_client: Redis | None = None,
         redis_prefix: str = "mcp_oauth:",
-        task_id: str = None,
+        task_id: str | None = None,
         scopes: str | list[str] | None = None,
         client_name: str = "DocsGPT-MCP",
-        user_id=None,
+        user_id: str | None = None,
         db=None,
         additional_client_metadata: dict[str, Any] | None = None,
     ):
@@ -641,12 +641,12 @@ class DocsGPTOAuth(OAuthClientProvider):
                 raise ValueError("No state in auth URL")
             return authorization_url, state
         except Exception as e:
-            raise Exception(f"Failed to process auth URL: {e}")
+            raise RuntimeError(f"Failed to process auth URL: {e}")
 
     async def redirect_handler(self, authorization_url: str) -> None:
         """Store auth URL and state in Redis for frontend to use."""
         auth_url, state = self._process_auth_url(authorization_url)
-        logging.info(
+        logger.info(
             "[DocsGPTOAuth] Processed auth_url: %s, state: %s", auth_url, state
         )
         self.auth_url = auth_url
@@ -672,7 +672,7 @@ class DocsGPTOAuth(OAuthClientProvider):
     async def callback_handler(self) -> tuple[str, str | None]:
         """Wait for auth code from Redis using the state value."""
         if not self.redis_client or not self.extracted_state:
-            raise Exception("Redis client or state not configured for OAuth")
+            raise RuntimeError("Redis client or state not configured for OAuth")
         poll_interval = 1
         max_wait_time = 300
         code_key = f"{self.redis_prefix}code:{self.extracted_state}"
@@ -722,11 +722,11 @@ class DocsGPTOAuth(OAuthClientProvider):
                 self.redis_client.delete(
                     f"{self.redis_prefix}state:{self.extracted_state}"
                 )
-                raise Exception(f"OAuth error: {error_msg}")
+                raise RuntimeError(f"OAuth error: {error_msg}")
             await asyncio.sleep(poll_interval)
         self.redis_client.delete(f"{self.redis_prefix}auth_url:{self.extracted_state}")
         self.redis_client.delete(f"{self.redis_prefix}state:{self.extracted_state}")
-        raise Exception("OAuth callback timeout: no code received within 5 minutes")
+        raise RuntimeError("OAuth callback timeout: no code received within 5 minutes")
 
 
 class DBTokenStorage(TokenStorage):
@@ -765,7 +765,7 @@ class DBTokenStorage(TokenStorage):
             {"$set": {"tokens": tokens.model_dump()}},
             True,
         )
-        logging.info(f"Saved tokens for {self.get_base_url(self.server_url)}")
+        logger.info(f"Saved tokens for {self.get_base_url(self.server_url)}")
 
     async def get_client_info(self) -> OAuthClientInformationFull | None:
         doc = await asyncio.to_thread(self.collection.find_one, self.get_db_key())
@@ -775,7 +775,7 @@ class DBTokenStorage(TokenStorage):
             client_info = OAuthClientInformationFull.model_validate(doc["client_info"])
             tokens = await self.get_tokens()
             if tokens is None:
-                logging.debug(
+                logger.debug(
                     "No tokens found, clearing client info to force fresh registration."
                 )
                 await asyncio.to_thread(
@@ -786,7 +786,7 @@ class DBTokenStorage(TokenStorage):
                 return None
             return client_info
         except ValidationError as e:
-            logging.error(f"Could not load client info: {e}")
+            logger.error(f"Could not load client info: {e}")
             return None
 
     def _serialize_client_info(self, info: dict) -> dict:
@@ -802,11 +802,11 @@ class DBTokenStorage(TokenStorage):
             {"$set": {"client_info": serialized_info}},
             True,
         )
-        logging.info(f"Saved client info for {self.get_base_url(self.server_url)}")
+        logger.info(f"Saved client info for {self.get_base_url(self.server_url)}")
 
     async def clear(self) -> None:
         await asyncio.to_thread(self.collection.delete_one, self.get_db_key())
-        logging.info(f"Cleared OAuth cache for {self.get_base_url(self.server_url)}")
+        logger.info(f"Cleared OAuth cache for {self.get_base_url(self.server_url)}")
 
     @classmethod
     async def clear_all(cls, db_client) -> None:
@@ -823,7 +823,7 @@ class MCPOAuthManager:
         self.redis_prefix = redis_prefix
 
     def handle_oauth_callback(
-        self, state: str, code: str, error: Optional[str] = None
+        self, state: str, code: str, error: str | None = None
     ) -> bool:
         """
         Handle OAuth callback from provider.
@@ -838,11 +838,11 @@ class MCPOAuthManager:
         """
         try:
             if not self.redis_client or not state:
-                raise Exception("Redis client or state not provided")
+                raise RuntimeError("Redis client or state not provided")
             if error:
                 error_key = f"{self.redis_prefix}error:{state}"
                 self.redis_client.setex(error_key, 300, error)
-                raise Exception(f"OAuth error received: {error}")
+                raise RuntimeError(f"OAuth error received: {error}")
             code_key = f"{self.redis_prefix}code:{state}"
             self.redis_client.setex(code_key, 300, code)
 

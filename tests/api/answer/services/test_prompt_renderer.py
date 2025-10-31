@@ -715,12 +715,6 @@ class TestStreamProcessorPromptRendering:
             assert result is None
 
     def test_pre_fetch_tools_enabled_by_default(self, mock_mongo_db, monkeypatch):
-        from unittest.mock import MagicMock, patch
-
-        from application.api.answer.services.stream_processor import StreamProcessor
-        from application.core.mongo_db import MongoDB
-        from bson import ObjectId
-
         db = MongoDB.get_client()[list(MongoDB.get_client().keys())[0]]
         tool_doc = {
             "_id": ObjectId(),
@@ -767,12 +761,6 @@ class TestStreamProcessorPromptRendering:
         assert result is None
 
     def test_pre_fetch_tools_memory_returns_error(self, mock_mongo_db):
-        from unittest.mock import MagicMock, patch
-
-        from application.api.answer.services.stream_processor import StreamProcessor
-        from application.core.mongo_db import MongoDB
-        from bson import ObjectId
-
         db = MongoDB.get_client()[list(MongoDB.get_client().keys())[0]]
         tool_doc = {
             "_id": ObjectId(),
@@ -808,12 +796,6 @@ class TestStreamProcessorPromptRendering:
             assert result is None
 
     def test_pre_fetch_tools_memory_returns_empty(self, mock_mongo_db):
-        from unittest.mock import MagicMock, patch
-
-        from application.api.answer.services.stream_processor import StreamProcessor
-        from application.core.mongo_db import MongoDB
-        from bson import ObjectId
-
         db = MongoDB.get_client()[list(MongoDB.get_client().keys())[0]]
         tool_doc = {
             "_id": ObjectId(),

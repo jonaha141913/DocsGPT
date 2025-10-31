@@ -1,7 +1,7 @@
 import logging
 import uuid
 from abc import ABC, abstractmethod
-from typing import Dict, Generator, List, Optional
+from typing import Generator
 
 from bson.objectid import ObjectId
 
@@ -72,11 +72,11 @@ class BaseAgent(ABC):
 
     @abstractmethod
     def _gen_inner(
-        self, query: str, log_context: LogContext
-    ) -> Generator[Dict, None, None]:
+        self, query: str, log_context: LogContext | None = None
+    ) -> Generator[dict, None, None]:
         pass
 
-    def _get_tools(self, api_key: str = None) -> Dict[str, Dict]:
+    def _get_tools(self, api_key: str | None = None) -> dict[str, dict]:
         mongo = MongoDB.get_client()
         db = mongo[settings.MONGO_DB_NAME]
         agents_collection = db["agents"]

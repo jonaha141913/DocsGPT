@@ -1,8 +1,7 @@
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from application.templates.namespaces import NamespaceManager
-
 from application.templates.template_engine import TemplateEngine, TemplateRenderError
 
 logger = logging.getLogger(__name__)
@@ -18,12 +17,12 @@ class PromptRenderer:
     def render_prompt(
         self,
         prompt_content: str,
-        user_id: Optional[str] = None,
-        request_id: Optional[str] = None,
-        passthrough_data: Optional[Dict[str, Any]] = None,
-        docs: Optional[list] = None,
-        docs_together: Optional[str] = None,
-        tools_data: Optional[Dict[str, Any]] = None,
+        user_id: str | None = None,
+        request_id: str | None = None,
+        passthrough_data: dict[str, Any] | None = None,
+        docs: list | None = None,
+        docs_together: str | None = None,
+        tools_data: dict[str, Any] | None = None,
         **kwargs,
     ) -> str:
         """
@@ -77,7 +76,7 @@ class PromptRenderer:
         return "{{" in prompt_content and "}}" in prompt_content
 
     def _apply_legacy_substitutions(
-        self, prompt_content: str, docs_together: Optional[str] = None
+        self, prompt_content: str, docs_together: str | None = None
     ) -> str:
         """
         Apply backward-compatible substitutions for old prompt format.
