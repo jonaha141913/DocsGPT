@@ -186,7 +186,7 @@ class TestUsageChecking:
                     "api_key": "test_key",
                     "prompt_tokens": 60,
                     "generated_tokens": 50,
-                    "timestamp": datetime.datetime.now(),
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc),
                 }
             )
 
@@ -221,8 +221,8 @@ class TestUsageChecking:
                 }
             )
 
-            now = datetime.datetime.now()
-            for i in range(3):
+            now = datetime.datetime.now(datetime.timezone.utc)
+            for _ in range(3):
                 token_usage_collection.insert_one(
                     {
                         "_id": ObjectId(),

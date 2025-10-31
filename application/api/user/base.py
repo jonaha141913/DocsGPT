@@ -6,11 +6,11 @@ import datetime
 import os
 import uuid
 from functools import wraps
-from typing import Optional, Tuple
 
 from bson.objectid import ObjectId
-from flask import current_app, jsonify, make_response, Response
+from flask import Response, current_app, jsonify, make_response
 from pymongo import ReturnDocument
+from pymongo.errors import PyMongoError
 from werkzeug.utils import secure_filename
 
 from application.core.mongo_db import MongoDB
@@ -46,7 +46,7 @@ try:
         background=True,
     )
     users_collection.create_index("user_id", unique=True)
-except Exception as e:
+except PyMongoError as e:
     print("Error creating indexes:", e)
 current_dir = os.path.dirname(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -154,7 +154,7 @@ def get_vector_store(source_id):
 
 def handle_image_upload(
     request, existing_url: str, user: str, storage, base_path: str = "attachments/"
-) -> Tuple[str, Optional[Response]]:
+) -> tuple[str, Response | None]:
     """
     Handle image file upload from request.
 
@@ -179,7 +179,7 @@ def handle_image_upload(
                 storage.save_file(file, upload_path, storage_class="STANDARD")
                 image_url = upload_path
             except Exception as e:
-                current_app.logger.error(f"Error uploading image: {e}")
+                current_app.logger.error(f"Error uploading image: {e}", exc_info=True)
                 return None, make_response(
                     jsonify({"success": False, "message": "Image upload failed"}),
                     400,
