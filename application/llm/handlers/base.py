@@ -1,7 +1,8 @@
-import logging
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Any, Dict, Generator, List, Optional, Union
+import logging
+from typing import Any, Optional
 
 from application.logging import build_stack_data
 
@@ -14,11 +15,11 @@ class ToolCall:
 
     id: str
     name: str
-    arguments: Union[str, Dict]
-    index: Optional[int] = None
+    arguments: str | dict
+    index: int | None = None
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "ToolCall":
+    def from_dict(cls, data: dict) -> "ToolCall":
         """Create ToolCall from dictionary."""
         return cls(
             id=data.get("id", ""),
@@ -221,8 +222,8 @@ class LLMHandler(ABC):
                 )
 
                 updated_messages.append(self.create_tool_message(call, tool_response))
-            except Exception as e:
-                logger.error(f"Error executing tool: {str(e)}", exc_info=True)
+            except Exception:
+                logger.error("Error executing tool", exc_info=True)
                 error_call = ToolCall(
                     id=call.id, name=call.name, arguments=call.arguments
                 )

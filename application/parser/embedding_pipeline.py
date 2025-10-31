@@ -1,9 +1,13 @@
-import os
 import logging
+import os
+
 from retry import retry
 from tqdm import tqdm
+
 from application.core.settings import settings
 from application.vectorstore.vector_creator import VectorCreator
+
+logger = logging.getLogger(__name__)
 
 
 def sanitize_content(content: str) -> str:
@@ -37,7 +41,7 @@ def add_text_to_store_with_retry(store, doc, source_id):
         doc.metadata["source_id"] = str(source_id)
         store.add_texts([doc.page_content], metadatas=[doc.metadata])
     except Exception as e:
-        logging.error(f"Failed to add document with retry: {e}", exc_info=True)
+        logger.error(f"Failed to add document with retry: {e}", exc_info=True)
         raise
 
 

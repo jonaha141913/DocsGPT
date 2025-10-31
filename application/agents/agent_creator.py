@@ -3,10 +3,7 @@ from application.agents.react_agent import ReActAgent
 
 
 class AgentCreator:
-    agents = {
-        "classic": ClassicAgent,
-        "react": ReActAgent,
-    }
+    agents: dict[str, type] = {}
 
     @classmethod
     def create_agent(cls, type, *args, **kwargs):

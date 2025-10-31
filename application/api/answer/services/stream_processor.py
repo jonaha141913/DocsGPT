@@ -3,10 +3,9 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Set
+from typing import Any, Optional
 
 from bson.dbref import DBRef
-
 from bson.objectid import ObjectId
 
 from application.agents.agent_creator import AgentCreator
@@ -54,7 +53,7 @@ def get_prompt(prompt_id: str, prompts_collection=None) -> str:
         if not prompt_doc:
             raise ValueError(f"Prompt with ID {prompt_id} not found")
         return prompt_doc["content"]
-    except Exception as e:
+    except (ValueError, KeyError) as e:
         raise ValueError(f"Invalid prompt ID: {prompt_id}") from e
 
 
@@ -143,21 +142,21 @@ class StreamProcessor:
                 )
         return attachments
 
-    def _get_agent_key(self, agent_id: Optional[str], user_id: Optional[str]) -> tuple:
+    def _get_agent_key(self, agent_id: str | None, user_id: str | None) -> tuple:
         """Get API key for agent with access control"""
         if not agent_id:
             return None, False, None
         try:
             agent = self.agents_collection.find_one({"_id": ObjectId(agent_id)})
             if agent is None:
-                raise Exception("Agent not found")
+                raise ValueError("Agent not found")
             is_owner = agent.get("user") == user_id
             is_shared_with_user = agent.get(
                 "shared_publicly", False
             ) or user_id in agent.get("shared_with", [])
 
             if not (is_owner or is_shared_with_user):
-                raise Exception("Unauthorized access to the agent")
+                raise PermissionError("Unauthorized access to the agent")
             if is_owner:
                 self.agents_collection.update_one(
                     {"_id": ObjectId(agent_id)},
@@ -168,14 +167,14 @@ class StreamProcessor:
                     },
                 )
             return str(agent["key"]), not is_owner, agent.get("shared_token")
-        except Exception as e:
+        except (ValueError, PermissionError, KeyError) as e:
             logger.error(f"Error in get_agent_key: {str(e)}", exc_info=True)
             raise
 
-    def _get_data_from_api_key(self, api_key: str) -> Dict[str, Any]:
+    def _get_data_from_api_key(self, api_key: str) -> dict[str, Any]:
         data = self.agents_collection.find_one({"key": api_key})
         if not data:
-            raise Exception("Invalid API Key, please generate a new key", 401)
+            raise ValueError("Invalid API Key, please generate a new key")
         source = data.get("source")
         if isinstance(source, DBRef):
             source_doc = self.db.dereference(source)
@@ -449,9 +448,9 @@ class StreamProcessor:
 
     def _fetch_tool_data(
         self,
-        tool_doc: Dict[str, Any],
-        required_actions: Optional[Set[Optional[str]]],
-    ) -> Optional[Dict[str, Any]]:
+        tool_doc: dict[str, Any],
+        required_actions: Optional[set[Optional[str]]],
+    ) -> Optional[dict[str, Any]]:
         """Generic method to fetch data from any tool for pre-injection into prompt
 
         This method calls each action defined by the tool using:
@@ -497,7 +496,7 @@ class StreamProcessor:
             include_all_actions = (
                 required_actions is None or (required_actions and None in required_actions)
             )
-            allowed_actions: Set[str] = (
+            allowed_actions: set[str] = (
                 {action for action in required_actions if isinstance(action, str)}
                 if required_actions
                 else set()
@@ -566,11 +565,11 @@ class StreamProcessor:
             return None
         try:
             self._prompt_content = get_prompt(prompt_id, self.prompts_collection)
-        except Exception:
+        except ValueError:
             self._prompt_content = None
         return self._prompt_content
 
-    def _get_required_tool_actions(self) -> Optional[Dict[str, Set[Optional[str]]]]:
+    def _get_required_tool_actions(self) -> Optional[dict[str, set[Optional[str]]]]:
         """Determine which tool actions are referenced in the prompt template.
 
         Returns:
@@ -601,8 +600,8 @@ class StreamProcessor:
             return self._required_tool_actions
 
     def _fetch_memory_tool_data(
-        self, tool_doc: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, tool_doc: dict[str, Any]
+    ) -> Optional[dict[str, Any]]:
         """Fetch memory tool data for pre-injection into prompt"""
         try:
             tool_config = tool_doc.get("config", {}).copy()

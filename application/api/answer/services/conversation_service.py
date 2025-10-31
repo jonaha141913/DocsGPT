@@ -1,11 +1,11 @@
 import logging
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
+
+from bson import ObjectId
 
 from application.core.mongo_db import MongoDB
-
 from application.core.settings import settings
-from bson import ObjectId
 
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class ConversationService:
 
     def get_conversation(
         self, conversation_id: str, user_id: str
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         """Retrieve a conversation with proper access control"""
         if not conversation_id or not user_id:
             return None
@@ -39,8 +39,8 @@ class ConversationService:
                 return None
             conversation["_id"] = str(conversation["_id"])
             return conversation
-        except Exception as e:
-            logger.error(f"Error fetching conversation: {str(e)}", exc_info=True)
+        except Exception:
+            logger.error(f"Error fetching conversation: {conversation_id}", exc_info=True)
             return None
 
     def save_conversation(
@@ -49,17 +49,17 @@ class ConversationService:
         question: str,
         response: str,
         thought: str,
-        sources: List[Dict[str, Any]],
-        tool_calls: List[Dict[str, Any]],
+        sources: list[dict[str, Any]],
+        tool_calls: list[dict[str, Any]],
         llm: Any,
         gpt_model: str,
-        decoded_token: Dict[str, Any],
+        decoded_token: dict[str, Any],
         index: Optional[int] = None,
         api_key: Optional[str] = None,
         agent_id: Optional[str] = None,
         is_shared_usage: bool = False,
         shared_token: Optional[str] = None,
-        attachment_ids: Optional[List[str]] = None,
+        attachment_ids: Optional[list[str]] = None,
     ) -> str:
         """Save or update a conversation in the database"""
         user_id = decoded_token.get("sub")

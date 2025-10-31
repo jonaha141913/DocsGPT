@@ -1,5 +1,6 @@
-import pytest
 from bson import ObjectId
+
+import pytest
 
 
 @pytest.mark.unit
@@ -196,11 +197,8 @@ class TestStreamProcessorAgentConfiguration:
 
         processor = StreamProcessor(request_data, None)
 
-        try:
+        with pytest.raises(Exception, match="Invalid API Key"):
             processor._configure_agent()
-            assert processor.agent_config is not None
-        except Exception as e:
-            assert "Invalid API Key" in str(e)
 
     def test_uses_default_config_without_api_key(self, mock_mongo_db):
         from application.api.answer.services.stream_processor import StreamProcessor

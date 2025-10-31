@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Any, Dict, Generator, List
+from collections.abc import Generator
+from typing import Any
 
 from application.agents.base import BaseAgent
 from application.logging import build_stack_data, LogContext
