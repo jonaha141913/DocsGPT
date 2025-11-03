@@ -3,10 +3,9 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Set
+from typing import Any, Set
 
 from bson.dbref import DBRef
-
 from bson.objectid import ObjectId
 
 from application.agents.agent_creator import AgentCreator
@@ -60,7 +59,7 @@ def get_prompt(prompt_id: str, prompts_collection=None) -> str:
 
 class StreamProcessor:
     def __init__(
-        self, request_data: Dict[str, Any], decoded_token: Optional[Dict[str, Any]]
+        self, request_data: dict[str, Any], decoded_token: dict[str, Any] | None
     ):
         mongo = MongoDB.get_client()
         self.db = mongo[settings.MONGO_DB_NAME]
@@ -86,8 +85,8 @@ class StreamProcessor:
         self.gpt_model = get_gpt_model()
         self.conversation_service = ConversationService()
         self.prompt_renderer = PromptRenderer()
-        self._prompt_content: Optional[str] = None
-        self._required_tool_actions: Optional[Dict[str, Set[Optional[str]]]] = None
+        self._prompt_content: str | None = None
+        self._required_tool_actions: dict[str, set[str | None]] | None = None
 
     def initialize(self):
         """Initialize all required components for processing"""
@@ -138,12 +137,12 @@ class StreamProcessor:
                 if attachment_doc:
                     attachments.append(attachment_doc)
             except Exception as e:
-                logger.error(
-                    f"Error retrieving attachment {attachment_id}: {e}", exc_info=True
+                logger.exception(
+                    f"Error retrieving attachment {attachment_id}: {e}"
                 )
         return attachments
 
-    def _get_agent_key(self, agent_id: Optional[str], user_id: Optional[str]) -> tuple:
+    def _get_agent_key(self, agent_id: str | None, user_id: str | None) -> tuple:
         """Get API key for agent with access control"""
         if not agent_id:
             return None, False, None
@@ -169,13 +168,13 @@ class StreamProcessor:
                 )
             return str(agent["key"]), not is_owner, agent.get("shared_token")
         except Exception as e:
-            logger.error(f"Error in get_agent_key: {str(e)}", exc_info=True)
+            logger.exception(f"Error in get_agent_key: {e}")
             raise
 
-    def _get_data_from_api_key(self, api_key: str) -> Dict[str, Any]:
+    def _get_data_from_api_key(self, api_key: str) -> dict[str, Any]:
         data = self.agents_collection.find_one({"key": api_key})
         if not data:
-            raise Exception("Invalid API Key, please generate a new key", 401)
+            raise ValueError("Invalid API Key, please generate a new key")
         source = data.get("source")
         if isinstance(source, DBRef):
             source_doc = self.db.dereference(source)
@@ -349,7 +348,7 @@ class StreamProcessor:
             decoded_token=self.decoded_token,
         )
 
-    def pre_fetch_docs(self, question: str) -> tuple[Optional[str], Optional[list]]:
+    def pre_fetch_docs(self, question: str) -> tuple[str | None, list | None]:
         """Pre-fetch documents for template rendering before agent creation"""
         if self.data.get("isNoneDoc", False):
             logger.info("Pre-fetch skipped: isNoneDoc=True")
@@ -381,10 +380,10 @@ class StreamProcessor:
 
             return docs_together, docs
         except Exception as e:
-            logger.error(f"Failed to pre-fetch docs: {str(e)}", exc_info=True)
+            logger.exception(f"Failed to pre-fetch docs: {e}")
             return None, None
 
-    def pre_fetch_tools(self) -> Optional[Dict[str, Any]]:
+    def pre_fetch_tools(self) -> dict[str, Any] | None:
         """Pre-fetch tool data for template rendering before agent creation
 
         Can be controlled via:
@@ -446,9 +445,9 @@ class StreamProcessor:
 
     def _fetch_tool_data(
         self,
-        tool_doc: Dict[str, Any],
-        required_actions: Optional[Set[Optional[str]]],
-    ) -> Optional[Dict[str, Any]]:
+        tool_doc: dict[str, Any],
+        required_actions: set[str | None] | None,
+    ) -> dict[str, Any] | None:
         """Fetch and execute tool actions with saved parameters"""
         try:
             from application.agents.tools.tool_manager import ToolManager
@@ -599,7 +598,7 @@ class StreamProcessor:
 
             return {"root": root_view, "available": True}
         except Exception as e:
-            logger.warning(f"Failed to fetch memory tool data: {str(e)}")
+            logger.warning(f"Failed to fetch memory tool data: {e}")
             return None
 
     def create_agent(

@@ -1,6 +1,7 @@
-import re
-from typing import List, Tuple
 import logging
+import re
+from typing import Tuple
+
 from application.parser.schema.base import Document
 from application.utils import get_encoding
 
@@ -34,7 +35,7 @@ class Chunker:
 
 
     
-    def split_document(self, doc: Document) -> List[Document]:
+    def split_document(self, doc: Document) -> list[Document]:
         split_docs = []
         header, body = self.separate_header_and_body(doc.text)
         header_tokens = self.encoding.encode(header) if header else []
@@ -44,8 +45,10 @@ class Chunker:
         part_index = 0
         while current_position < len(body_tokens):
             end_position = current_position + self.max_tokens - len(header_tokens)
-            chunk_tokens = (header_tokens + body_tokens[current_position:end_position]
-                            if self.duplicate_headers or part_index == 0 else body_tokens[current_position:end_position])
+            if self.duplicate_headers or part_index == 0:
+                chunk_tokens = header_tokens + body_tokens[current_position:end_position]
+            else:
+                chunk_tokens = body_tokens[current_position:end_position]
             chunk_text = self.encoding.decode(chunk_tokens)
             new_doc = Document(
                 text=chunk_text,

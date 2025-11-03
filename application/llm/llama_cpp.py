@@ -1,14 +1,20 @@
-from application.llm.base import BaseLLM
+import threading
+
 from application.core.settings import settings
+from application.llm.base import BaseLLM
+
+
+from typing import ClassVar, Dict, Optional
+
 import threading
 
 
 class LlamaSingleton:
-    _instances = {}
+    _instances: ClassVar[Dict[str, Optional['Llama']]] = {}
     _lock = threading.Lock()  # Add a lock for thread synchronization
 
     @classmethod
-    def get_instance(cls, llm_name):
+    def get_instance(cls, llm_name: str):
         if llm_name not in cls._instances:
             try:
                 from llama_cpp import Llama

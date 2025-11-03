@@ -1,3 +1,6 @@
+import sys
+import types
+
 import pytest
 from pathlib import Path
 from unittest.mock import patch
@@ -30,8 +33,6 @@ def _fake_presentation_with(slides_shapes_texts):
 def test_pptx_parser_concat_true():
     slides = [["Hello ", "World"], ["Slide2"]]
     FakePres = _fake_presentation_with(slides)
-    import sys
-    import types
     fake_pptx = types.ModuleType("pptx")
     fake_pptx.Presentation = FakePres
     parser = PPTXParser()
@@ -43,8 +44,6 @@ def test_pptx_parser_concat_true():
 def test_pptx_parser_list_mode():
     slides = [[" A ", "B"], [" C "]]
     FakePres = _fake_presentation_with(slides)
-    import sys
-    import types
     fake_pptx = types.ModuleType("pptx")
     fake_pptx.Presentation = FakePres
     parser = PPTXParser()
@@ -56,7 +55,6 @@ def test_pptx_parser_list_mode():
 
 def test_pptx_parser_import_error():
     parser = PPTXParser()
-    import sys
     with patch.dict(sys.modules, {"pptx": None}):
         with pytest.raises(ImportError, match="pptx module is required to read .PPTX files"):
             parser.parse_file(Path("missing.pptx"))

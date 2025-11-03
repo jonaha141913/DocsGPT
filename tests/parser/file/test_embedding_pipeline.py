@@ -1,11 +1,11 @@
-import pytest
 import logging
-from unittest.mock import patch, MagicMock
+import pytest
+from unittest.mock import MagicMock, patch
 
 from application.parser.embedding_pipeline import (
+    embed_and_store_documents,
     sanitize_content,
     add_text_to_store_with_retry,
-    embed_and_store_documents,
 )
 
 
@@ -93,6 +93,10 @@ def test_embed_and_store_documents_non_faiss(tmp_path, mock_settings, mock_vecto
 
 
 @patch("application.parser.embedding_pipeline.add_text_to_store_with_retry")
+class EmbeddingError(Exception):
+    pass
+
+
 def test_embed_and_store_documents_partial_failure(
     mock_add_retry, tmp_path, mock_settings, mock_vector_creator, caplog
 ):
@@ -109,7 +113,7 @@ def test_embed_and_store_documents_partial_failure(
     # First document succeeds, second fails
     def side_effect(*args, **kwargs):
         if "bad" in args[1].page_content:
-            raise Exception("Embedding failed")
+            raise EmbeddingError("Embedding failed")
     mock_add_retry.side_effect = side_effect
 
     with caplog.at_level(logging.ERROR):

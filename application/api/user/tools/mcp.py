@@ -66,7 +66,7 @@ class TestMCPServerConfig(Resource):
 
             return make_response(jsonify(result), 200)
         except Exception as e:
-            current_app.logger.error(f"Error testing MCP server: {e}", exc_info=True)
+            current_app.logger.exception(f"Error testing MCP server: {e}")
             return make_response(
                 jsonify(
                     {"success": False, "error": f"Connection test failed: {str(e)}"}
@@ -129,21 +129,20 @@ class MCPServerSave(Resource):
             mcp_config = config.copy()
             mcp_config["auth_credentials"] = auth_credentials
 
-            if auth_type == "oauth":
-                if not config.get("oauth_task_id"):
-                    return make_response(
-                        jsonify(
-                            {
-                                "success": False,
-                                "error": "Connection not authorized. Please complete the OAuth authorization first.",
-                            }
-                        ),
-                        400,
-                    )
+            if auth_type == "oauth" and not config.get("oauth_task_id"):
+                return make_response(
+                    jsonify(
+                        {
+                            "success": False,
+                            "error": "Connection not authorized. Please complete the OAuth authorization first.",
+                        }
+                    ),
+                    400,
+                )
                 redis_client = get_redis_instance()
                 manager = MCPOAuthManager(redis_client)
                 result = manager.get_oauth_status(config["oauth_task_id"])
-                if not result.get("status") == "completed":
+                if result.get("status") != "completed":
                     return make_response(
                         jsonify(
                             {
@@ -159,7 +158,7 @@ class MCPServerSave(Resource):
                 mcp_tool.discover_tools()
                 actions_metadata = mcp_tool.get_actions_metadata()
             else:
-                raise Exception(
+                raise ValueError(
                     "No valid credentials provided for the selected authentication type"
                 )
             storage_config = config.copy()
@@ -179,13 +178,12 @@ class MCPServerSave(Resource):
             transformed_actions = []
             for action in actions_metadata:
                 action["active"] = True
-                if "parameters" in action:
-                    if "properties" in action["parameters"]:
-                        for param_name, param_details in action["parameters"][
-                            "properties"
-                        ].items():
-                            param_details["filled_by_llm"] = True
-                            param_details["value"] = ""
+                if "parameters" in action and "properties" in action["parameters"]:
+                    for param_name, param_details in action["parameters"].get(
+                        "properties", {}
+                    ).items():
+                        param_details["filled_by_llm"] = True
+                        param_details["value"] = ""
                 transformed_actions.append(action)
             tool_data = {
                 "name": "mcp_tool",
@@ -231,7 +229,7 @@ class MCPServerSave(Resource):
                 }
             return make_response(jsonify(response_data), 200)
         except Exception as e:
-            current_app.logger.error(f"Error saving MCP server: {e}", exc_info=True)
+            current_app.logger.exception(f"Error saving MCP server: {e}")
             return make_response(
                 jsonify(
                     {"success": False, "error": f"Failed to save MCP server: {str(e)}"}
@@ -288,11 +286,9 @@ class MCPOAuthCallback(Resource):
                     "/api/connectors/callback-status?status=error&message=OAuth+callback+failed.&provider=mcp_tool"
                 )
         except Exception as e:
-            current_app.logger.error(
-                f"Error handling MCP OAuth callback: {str(e)}", exc_info=True
-            )
+            current_app.logger.exception(f"Error handling MCP OAuth callback: {e}")
             return redirect(
-                f"/api/connectors/callback-status?status=error&message=Internal+server+error:+{str(e)}.&provider=mcp_tool"
+                f"/api/connectors/callback-status?status=error&message=Internal+server+error:+{e}.&provider=mcp_tool"
             )
 
 
@@ -326,7 +322,7 @@ class MCPOAuthStatus(Resource):
                 )
         except Exception as e:
             current_app.logger.error(
-                f"Error getting OAuth status for task {task_id}: {str(e)}"
+                f"Error getting OAuth status for task {task_id}: {e}"
             )
             return make_response(
                 jsonify({"success": False, "error": str(e), "task_id": task_id}), 500

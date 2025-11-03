@@ -3,26 +3,20 @@ import datetime
 import json
 import uuid
 
-
 from bson.objectid import ObjectId
 from flask import (
     Blueprint,
     current_app,
     jsonify,
     make_response,
-    request
+    request,
 )
 from flask_restx import fields, Namespace, Resource
 
-
-from application.api.user.tasks import (
-    ingest_connector_task,
-)
+from application.api import api
+from application.api.user.tasks import ingest_connector_task
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
-from application.api import api
-
-
 from application.parser.connectors.connector_creator import ConnectorCreator
 
 
@@ -75,7 +69,7 @@ class ConnectorAuth(Resource):
                 "state": state
             }), 200)
         except Exception as e:
-            current_app.logger.error(f"Error generating connector auth URL: {e}")
+            current_app.logger.exception(f"Error generating connector auth URL: {e}")
             return make_response(jsonify({"success": False, "error": str(e)}), 500)
 
 
@@ -144,7 +138,7 @@ class ConnectorsCallback(Resource):
                 return redirect(f"/api/connectors/callback-status?status=success&message=Authentication+successful&provider={provider}&session_token={session_token}&user_email={user_email}")
 
             except Exception as e:
-                current_app.logger.error(f"Error exchanging code for tokens: {str(e)}", exc_info=True)
+                current_app.logger.exception(f"Error exchanging code for tokens: {str(e)}")
                 return redirect(f"/api/connectors/callback-status?status=error&message=Authentication+failed.+Please+try+again+and+make+sure+to+grant+all+requested+permissions.&provider={provider}")
 
         except Exception as e:
@@ -204,7 +198,7 @@ class ConnectorFiles(Resource):
                 if modified_time:
                     date_part = modified_time.split('T')[0]
                     time_part = modified_time.split('T')[1].split('.')[0].split('Z')[0]
-                    formatted_time = f"{date_part} {time_part}"
+                    formatted_time = f"{date_part!s} {time_part!s}"
                 else:
                     formatted_time = None
 
@@ -261,11 +255,11 @@ class ConnectorValidateSession(Resource):
                 try:
                     refreshed_token_info = auth.refresh_access_token(token_info.get('refresh_token'))
                     sanitized_token_info = {
-                    "access_token": refreshed_token_info.get("access_token"),
-                    "refresh_token": refreshed_token_info.get("refresh_token"),
-                    "token_uri": refreshed_token_info.get("token_uri"),
-                    "expiry": refreshed_token_info.get("expiry")
-                }    
+                        "access_token": refreshed_token_info.get("access_token"),
+                        "refresh_token": refreshed_token_info.get("refresh_token"),
+                        "token_uri": refreshed_token_info.get("token_uri"),
+                        "expiry": refreshed_token_info.get("expiry")
+                    }
                     sessions_collection.update_one(
                         {"session_token": session_token},
                         {"$set": {"token_info": sanitized_token_info}}
@@ -273,7 +267,7 @@ class ConnectorValidateSession(Resource):
                     token_info = sanitized_token_info
                     is_expired = False
                 except Exception as refresh_error:
-                    current_app.logger.error(f"Failed to refresh token: {refresh_error}")
+                    current_app.logger.exception(f"Failed to refresh token: {refresh_error}")
             
             if is_expired:
                 return make_response(jsonify({
@@ -289,7 +283,7 @@ class ConnectorValidateSession(Resource):
                 "access_token": token_info.get('access_token')
             }), 200)
         except Exception as e:
-            current_app.logger.error(f"Error validating connector session: {e}")
+            current_app.logger.exception(f"Error validating connector session: {e}")
             return make_response(jsonify({"success": False, "error": str(e)}), 500)
 
 
@@ -411,9 +405,8 @@ class ConnectorSync(Resource):
             )
 
         except Exception as err:
-            current_app.logger.error(
-                f"Error syncing connector source: {err}",
-                exc_info=True
+            current_app.logger.exception(
+                f"Error syncing connector source: {err}"
             )
             return make_response(
                 jsonify({
@@ -483,7 +476,7 @@ class ConnectorCallbackStatus(Resource):
             
             return make_response(html_content, 200, {'Content-Type': 'text/html'})
         except Exception as e:
-            current_app.logger.error(f"Error rendering callback status page: {e}")
+            current_app.logger.exception(f"Error rendering callback status page: {e}")
             return make_response("Authentication error occurred", 500, {'Content-Type': 'text/html'})
 
 

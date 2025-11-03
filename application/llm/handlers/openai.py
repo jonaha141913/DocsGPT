@@ -1,4 +1,4 @@
-from typing import Any, Dict, Generator
+from typing import Any, Generator
 
 from application.llm.handlers.base import LLMHandler, LLMResponse, ToolCall
 
@@ -53,5 +53,4 @@ class OpenAILLMHandler(LLMHandler):
 
     def _iterate_stream(self, response: Any) -> Generator:
         """Iterate through OpenAI streaming response."""
-        for chunk in response:
-            yield chunk
+        yield from response

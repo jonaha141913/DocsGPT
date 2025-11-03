@@ -1,6 +1,6 @@
 import pytest
-from unittest.mock import patch, MagicMock
 from application.tts.tts_creator import TTSCreator
+from unittest.mock import MagicMock, patch
 
 
 @pytest.fixture

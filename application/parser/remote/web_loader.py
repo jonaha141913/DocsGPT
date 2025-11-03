@@ -1,7 +1,7 @@
-import logging
 from application.parser.remote.base import BaseRemote
 from application.parser.schema.base import Document
 from langchain_community.document_loaders import WebBaseLoader
+import logging
 from urllib.parse import urlparse
 
 headers = {
@@ -40,6 +40,6 @@ class WebLoader(BaseRemote):
                         )
                     )
             except Exception as e:
-                logging.error(f"Error processing URL {url}: {e}", exc_info=True)
+                logger.exception(f"Error processing URL {url}")
                 continue
         return documents

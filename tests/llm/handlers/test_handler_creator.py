@@ -1,8 +1,8 @@
 
-from application.llm.handlers.handler_creator import LLMHandlerCreator
 from application.llm.handlers.base import LLMHandler
-from application.llm.handlers.openai import OpenAILLMHandler
 from application.llm.handlers.google import GoogleLLMHandler
+from application.llm.handlers.handler_creator import LLMHandlerCreator
+from application.llm.handlers.openai import OpenAILLMHandler
 
 
 class TestLLMHandlerCreator:
@@ -94,7 +94,7 @@ class TestLLMHandlerCreator:
 
     def test_all_registered_handlers_are_valid(self):
         """Test that all registered handlers can be instantiated."""
-        for handler_type in LLMHandlerCreator.handlers.keys():
+        for handler_type in LLMHandlerCreator.handlers:
             handler = LLMHandlerCreator.create_handler(handler_type)
             assert isinstance(handler, LLMHandler)
             assert hasattr(handler, 'parse_response')

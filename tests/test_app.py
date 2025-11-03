@@ -1,9 +1,9 @@
-import pytest
 from application.api.answer import answer
 from application.api.internal.routes import internal
 from application.api.user.routes import user
 from application.core.settings import settings
 from flask import Flask
+import pytest
 
 
 @pytest.mark.unit

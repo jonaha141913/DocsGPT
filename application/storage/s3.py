@@ -1,14 +1,18 @@
 """S3 storage implementation."""
 
 import io
+import logging
 import os
-from typing import BinaryIO, Callable, List
+import tempfile
+from typing import BinaryIO, Callable
 
 import boto3
-from application.core.settings import settings
-
-from application.storage.base import BaseStorage
 from botocore.exceptions import ClientError
+
+from application.core.settings import settings
+from application.storage.base import BaseStorage
+
+logger = logging.getLogger(__name__)
 
 
 class S3Storage(BaseStorage):

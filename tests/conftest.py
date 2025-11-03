@@ -1,6 +1,6 @@
-from unittest.mock import Mock
-
 import mongomock
+
+from unittest.mock import Mock
 
 import pytest
 

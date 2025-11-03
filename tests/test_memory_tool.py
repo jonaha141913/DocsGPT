@@ -1,6 +1,7 @@
-import pytest
 from application.agents.tools.memory import MemoryTool
 from application.core.settings import settings
+
+import pytest
 
 
 @pytest.fixture
@@ -100,7 +101,7 @@ def memory_tool(monkeypatch) -> MemoryTool:
                         if doc_path.startswith(pattern):
                             results.append(doc)
             else:
-                for key, doc in self.docs.items():
+                for doc in self.docs.values():
                     if doc.get("user_id") == user_id and doc.get("tool_id") == tool_id:
                         results.append(doc)
             return results

@@ -1,10 +1,10 @@
-import os
-import re
-import logging
 import aiohttp
 import discord
 from discord.ext import commands
 import dotenv
+import logging
+import os
+import re
 
 dotenv.load_dotenv()
 
@@ -51,7 +51,7 @@ def chunk_string(text, max_length=2000):
 def escape_markdown(text):
     """Escapes Discord markdown characters."""
     escape_chars = r'\*_$$$$()~>#+-=|{}.!'
-    return re.sub(f'([{re.escape(escape_chars)}])', r'\\\1', text)
+    return re.sub('([{re.escape(escape_chars)}])', r'\\\1', text)
 
 def split_string(input_str):
     """Splits the input string to detect bot mentions."""
@@ -78,8 +78,7 @@ async def generate_answer(question, messages, conversation_id):
         "Content-Type": "application/json; charset=utf-8"
     }
     timeout = aiohttp.ClientTimeout(total=60)
-    async with aiohttp.ClientSession(timeout=timeout) as session:
-        async with session.post(API_URL, json=payload, headers=headers) as resp:
+    async with aiohttp.ClientSession(timeout=timeout) as session, session.post(API_URL, json=payload, headers=headers) as resp:
             if resp.status == 200:
                 data = await resp.json()
                 conversation_id = data.get("conversation_id")

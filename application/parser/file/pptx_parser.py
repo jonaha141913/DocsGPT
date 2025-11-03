@@ -2,7 +2,7 @@
 Contains parsers for presentation (.pptx) files to extract slide text.
 """
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from application.parser.file.base_parser import BaseParser
 
@@ -34,7 +34,7 @@ class PPTXParser(BaseParser):
         """Init parser."""
         return {}
 
-    def parse_file(self, file: Path, errors: str = "ignore") -> Union[str, List[str]]:
+    def parse_file(self, file: Path, errors: str = "ignore") -> str | list[str]:
         r"""
         Parse a .pptx file and extract text from each slide.
         Args:
@@ -72,4 +72,4 @@ class PPTXParser(BaseParser):
                 return slide_texts
 
         except Exception as e:
-            raise e
+            raise e from e

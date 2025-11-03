@@ -1,7 +1,6 @@
-from unittest.mock import Mock
-
-import pytest
 from bson import ObjectId
+import pytest
+from unittest.mock import Mock
 
 
 @pytest.mark.unit

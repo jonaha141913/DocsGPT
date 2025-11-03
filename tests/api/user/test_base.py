@@ -13,8 +13,8 @@ class TestTimeRangeGenerators:
     def test_generate_minute_range(self):
         from application.api.user.base import generate_minute_range
 
-        start = datetime.datetime(2024, 1, 1, 10, 0, 0)
-        end = datetime.datetime(2024, 1, 1, 10, 5, 0)
+        start = datetime.datetime(2024, 1, 1, 10, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2024, 1, 1, 10, 5, 0, tzinfo=datetime.timezone.utc)
 
         result = generate_minute_range(start, end)
 
@@ -26,8 +26,8 @@ class TestTimeRangeGenerators:
     def test_generate_hourly_range(self):
         from application.api.user.base import generate_hourly_range
 
-        start = datetime.datetime(2024, 1, 1, 10, 0, 0)
-        end = datetime.datetime(2024, 1, 1, 15, 0, 0)
+        start = datetime.datetime(2024, 1, 1, 10, 0, 0, tzinfo=datetime.timezone.utc)
+        end = datetime.datetime(2024, 1, 1, 15, 0, 0, tzinfo=datetime.timezone.utc)
 
         result = generate_hourly_range(start, end)
 
@@ -52,7 +52,7 @@ class TestTimeRangeGenerators:
     def test_single_minute_range(self):
         from application.api.user.base import generate_minute_range
 
-        time = datetime.datetime(2024, 1, 1, 10, 30, 0)
+        time = datetime.datetime(2024, 1, 1, 10, 30, 0, tzinfo=datetime.timezone.utc)
         result = generate_minute_range(time, time)
 
         assert len(result) == 1
@@ -162,7 +162,7 @@ class TestResolveToolDetails:
 class TestGetVectorStore:
 
     @patch("application.api.user.base.VectorCreator.create_vectorstore")
-    def test_creates_vector_store(self, mock_create, mock_mongo_db):
+    def test_creates_vector_store(self, mock_create):
         from application.api.user.base import get_vector_store
 
         mock_store = Mock()

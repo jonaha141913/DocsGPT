@@ -200,8 +200,8 @@ class ShareConversation(Resource):
                     201,
                 )
         except Exception as err:
-            current_app.logger.error(
-                f"Error sharing conversation: {err}", exc_info=True
+            current_app.logger.exception(
+                f"Error sharing conversation: {err}"
             )
             return make_response(jsonify({"success": False}), 400)
 
@@ -258,9 +258,8 @@ class GetPubliclySharedConversations(Resource):
                                         }
                                     )
                             except Exception as e:
-                                current_app.logger.error(
-                                    f"Error retrieving attachment {attachment_id}: {e}",
-                                    exc_info=True,
+                                current_app.logger.exception(
+                                    f"Error retrieving attachment {attachment_id}: {e}"
                                 )
                         query["attachments"] = attachment_details
             else:
@@ -284,7 +283,7 @@ class GetPubliclySharedConversations(Resource):
                 res["api_key"] = shared["api_key"]
             return make_response(jsonify(res), 200)
         except Exception as err:
-            current_app.logger.error(
-                f"Error getting shared conversation: {err}", exc_info=True
+            current_app.logger.exception(
+                f"Error getting shared conversation: {err}"
             )
             return make_response(jsonify({"success": False}), 400)

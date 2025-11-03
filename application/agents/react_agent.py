@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Dict, Generator, List
+from typing import Any, Generator
 
 from application.agents.base import BaseAgent
 from application.logging import build_stack_data, LogContext
@@ -235,4 +235,5 @@ class ReActAgent(BaseAgent):
             )
         except Exception as e:
             logger.error(f"Error extracting content: {e}")
+            raise
         return "".join(collected)

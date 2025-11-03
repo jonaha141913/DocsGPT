@@ -272,7 +272,7 @@ class PGVectorStore(BaseVectorStore):
             
         except Exception as e:
             conn.rollback()
-            logging.error(f"Error adding chunk: {e}")
+            logging.exception("Error adding chunk")
             raise
         finally:
             cursor.close()
@@ -292,7 +292,7 @@ class PGVectorStore(BaseVectorStore):
             
         except Exception as e:
             conn.rollback()
-            logging.error(f"Error deleting chunk: {e}")
+            logging.exception("Error deleting chunk")
             return False
         finally:
             cursor.close()
