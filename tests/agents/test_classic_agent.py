@@ -1,6 +1,6 @@
+import pytest
 from unittest.mock import Mock
 
-import pytest
 from application.agents.classic_agent import ClassicAgent
 
 
@@ -78,8 +78,6 @@ class TestClassicAgent:
         mock_mongo_db,
         log_context,
     ):
-        from application.core.settings import settings
-        from bson.objectid import ObjectId
 
         tool_id = str(ObjectId())
         mock_mongo_db[settings.MONGO_DB_NAME]["agents"].docs = {
@@ -113,7 +111,6 @@ class TestClassicAgent:
         mock_mongo_db,
         log_context,
     ):
-        from application.core.settings import settings
 
         mock_mongo_db[settings.MONGO_DB_NAME]["user_tools"].docs = {
             "1": {"_id": "1", "user": "test_user", "name": "tool1", "status": True}

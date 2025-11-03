@@ -1,12 +1,12 @@
 """Tests for S3 storage implementation."""
 
 import io
-from unittest.mock import MagicMock, patch
 
 import pytest
+from botocore.exceptions import ClientError
+from unittest.mock import MagicMock, patch
 
 from application.storage.s3 import S3Storage
-from botocore.exceptions import ClientError
 
 
 @pytest.fixture

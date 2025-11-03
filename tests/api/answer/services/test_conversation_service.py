@@ -1,38 +1,24 @@
-from unittest.mock import Mock
-
 import pytest
 from bson import ObjectId
+from unittest.mock import Mock
 
 
 @pytest.mark.unit
 class TestConversationServiceGet:
 
     def test_returns_none_when_no_conversation_id(self, mock_mongo_db):
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-
         service = ConversationService()
         result = service.get_conversation("", "user_123")
 
         assert result is None
 
     def test_returns_none_when_no_user_id(self, mock_mongo_db):
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-
         service = ConversationService()
         result = service.get_conversation(str(ObjectId()), "")
 
         assert result is None
 
     def test_returns_conversation_for_owner(self, mock_mongo_db):
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-        from application.core.settings import settings
-
         service = ConversationService()
         collection = mock_mongo_db[settings.MONGO_DB_NAME]["conversations"]
 
@@ -52,11 +38,6 @@ class TestConversationServiceGet:
         assert result["_id"] == str(conv_id)
 
     def test_returns_none_for_unauthorized_user(self, mock_mongo_db):
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-        from application.core.settings import settings
-
         service = ConversationService()
         collection = mock_mongo_db[settings.MONGO_DB_NAME]["conversations"]
 
@@ -70,11 +51,6 @@ class TestConversationServiceGet:
         assert result is None
 
     def test_converts_objectid_to_string(self, mock_mongo_db):
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-        from application.core.settings import settings
-
         service = ConversationService()
         collection = mock_mongo_db[settings.MONGO_DB_NAME]["conversations"]
 
@@ -92,10 +68,6 @@ class TestConversationServiceSave:
 
     def test_raises_error_when_no_user_in_token(self, mock_mongo_db):
         """Test validation: user ID required"""
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-
         service = ConversationService()
         mock_llm = Mock()
 
@@ -113,12 +85,6 @@ class TestConversationServiceSave:
             )
 
     def test_truncates_long_source_text(self, mock_mongo_db):
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-        from application.core.settings import settings
-        from bson import ObjectId
-
         service = ConversationService()
         collection = mock_mongo_db[settings.MONGO_DB_NAME]["conversations"]
 
@@ -147,12 +113,6 @@ class TestConversationServiceSave:
         assert saved_source_text == "x" * 1000
 
     def test_creates_new_conversation_with_summary(self, mock_mongo_db):
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-        from application.core.settings import settings
-        from bson import ObjectId
-
         service = ConversationService()
         collection = mock_mongo_db[settings.MONGO_DB_NAME]["conversations"]
 
@@ -179,12 +139,6 @@ class TestConversationServiceSave:
         assert saved_conv["queries"][0]["prompt"] == "What is Python?"
 
     def test_appends_to_existing_conversation(self, mock_mongo_db):
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-        from application.core.settings import settings
-        from bson import ObjectId
-
         service = ConversationService()
         collection = mock_mongo_db[settings.MONGO_DB_NAME]["conversations"]
 
@@ -215,11 +169,6 @@ class TestConversationServiceSave:
         assert result == str(existing_conv_id)
 
     def test_prevents_unauthorized_conversation_update(self, mock_mongo_db):
-        from application.api.answer.services.conversation_service import (
-            ConversationService,
-        )
-        from application.core.settings import settings
-
         service = ConversationService()
         collection = mock_mongo_db[settings.MONGO_DB_NAME]["conversations"]
 

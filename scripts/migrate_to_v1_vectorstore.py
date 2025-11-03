@@ -1,7 +1,7 @@
-import pymongo
-import os
-import shutil
 import logging
+import os
+import pymongo
+import shutil
 from tqdm import tqdm
 
 # Configure logging
@@ -100,5 +100,5 @@ if __name__ == "__main__":
         logger.info(" All migrations completed successfully!")
 
     except Exception as e:
-        logger.error(f" Migration failed due to error: {e}")
+        logger.exception(f" Migration failed due to error: {e}")
         logger.warning(" Please verify database state or restore from backups if necessary.")

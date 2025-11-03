@@ -1,6 +1,6 @@
+import pytest
 from unittest.mock import Mock
 
-import pytest
 from application.agents.tools.tool_action_parser import ToolActionParser
 
 
@@ -12,6 +12,7 @@ class TestToolActionParser:
         assert parser.llm_type == "OpenAILLM"
         assert "OpenAILLM" in parser.parsers
         assert "GoogleLLM" in parser.parsers
+        parser.parse_args(Mock())
 
     def test_parse_openai_llm_valid_call(self):
         parser = ToolActionParser("OpenAILLM")
@@ -20,7 +21,7 @@ class TestToolActionParser:
         call.name = "get_data_123"
         call.arguments = '{"param1": "value1", "param2": "value2"}'
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "123"
         assert action_name == "get_data"
@@ -33,7 +34,7 @@ class TestToolActionParser:
         call.name = "send_email_notification_456"
         call.arguments = '{"to": "user@example.com"}'
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "456"
         assert action_name == "send_email_notification"
@@ -46,7 +47,7 @@ class TestToolActionParser:
         call.name = "invalidtoolname"
         call.arguments = "{}"
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id is None
         assert action_name is None
@@ -59,7 +60,7 @@ class TestToolActionParser:
         call.name = "action_notanumber"
         call.arguments = "{}"
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "notanumber"
         assert action_name == "action"
@@ -71,7 +72,7 @@ class TestToolActionParser:
         call.name = "action_123"
         call.arguments = "invalid json"
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id is None
         assert action_name is None
@@ -82,7 +83,7 @@ class TestToolActionParser:
 
         call = Mock(spec=[])
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id is None
         assert action_name is None
@@ -95,7 +96,7 @@ class TestToolActionParser:
         call.name = "search_documents_789"
         call.arguments = {"query": "test query", "limit": 10}
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "789"
         assert action_name == "search_documents"
@@ -108,7 +109,7 @@ class TestToolActionParser:
         call.name = "create_new_user_account_999"
         call.arguments = {"username": "test"}
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "999"
         assert action_name == "create_new_user_account"
@@ -120,7 +121,7 @@ class TestToolActionParser:
         call.name = "nounderscores"
         call.arguments = {}
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id is None
         assert action_name is None
@@ -131,7 +132,7 @@ class TestToolActionParser:
 
         call = Mock(spec=[])
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id is None
         assert action_name is None
@@ -144,7 +145,7 @@ class TestToolActionParser:
         call.name = "action_123"
         call.arguments = '{"key": "value"}'
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "123"
         assert action_name == "action"
@@ -157,7 +158,7 @@ class TestToolActionParser:
         call.name = "action_123"
         call.arguments = "{}"
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "123"
         assert action_name == "action"
@@ -170,7 +171,7 @@ class TestToolActionParser:
         call.name = "action_456"
         call.arguments = {}
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "456"
         assert action_name == "action"
@@ -183,7 +184,7 @@ class TestToolActionParser:
         call.name = "send_message_123"
         call.arguments = '{"message": "Hello, World! 你好"}'
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "123"
         assert action_name == "send_message"
@@ -196,7 +197,7 @@ class TestToolActionParser:
         call.name = "create_record_123"
         call.arguments = '{"data": {"name": "John", "age": 30}}'
 
-        tool_id, action_name, call_args = parser.parse_args(call)
+        _, _, _ = parser.parse_args(call)
 
         assert tool_id == "123"
         assert action_name == "create_record"

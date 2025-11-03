@@ -1,8 +1,8 @@
-import pytest
+from application.parser.file.rst_parser import RstParser
 from pathlib import Path
 from unittest.mock import patch, mock_open
 
-from application.parser.file.rst_parser import RstParser
+import pytest
 
 
 @pytest.fixture

@@ -6,7 +6,6 @@ import os
 import shutil
 import string
 import tempfile
-from typing import Any, Dict
 import zipfile
 
 from collections import Counter
@@ -32,6 +31,7 @@ from application.retriever.retriever_creator import RetrieverCreator
 
 from application.storage.storage_creator import StorageCreator
 from application.utils import count_tokens_docs, num_tokens_from_string
+from typing import Any
 
 mongo = MongoDB.get_client()
 db = mongo[settings.MONGO_DB_NAME]
@@ -81,7 +81,10 @@ def extract_zip_recursive(zip_path, extract_to, current_depth=0, max_depth=5):
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_to)
         os.remove(zip_path)  # Remove the zip file after extracting
-    except Exception as e:
+    except zipfile.BadZipFile as e:
+        logging.error(f"Error extracting zip file {zip_path}: {e}", exc_info=True)
+        return
+    except OSError as e:
         logging.error(f"Error extracting zip file {zip_path}: {e}", exc_info=True)
         return
     # Check for nested zip files and extract them
@@ -101,7 +104,10 @@ def download_file(url, params, dest_path):
         response.raise_for_status()
         with open(dest_path, "wb") as f:
             f.write(response.content)
-    except requests.RequestException as e:
+    except requests.ConnectionError as e:
+        logging.error(f"Error downloading file: {e}")
+        raise
+    except requests.HTTPError as e:
         logging.error(f"Error downloading file: {e}")
         raise
 
@@ -135,7 +141,13 @@ def upload_index(full_path, file_data):
                 urljoin(settings.API_URL, "/api/upload_index"), data=file_data
             )
         response.raise_for_status()
-    except (requests.RequestException, FileNotFoundError) as e:
+    except requests.ConnectionError as e:
+        logging.error(f"Error uploading index: {e}")
+        raise
+    except requests.HTTPError as e:
+        logging.error(f"Error uploading index: {e}")
+        raise
+    except FileNotFoundError as e:
         logging.error(f"Error uploading index: {e}")
         raise
     finally:
@@ -207,7 +219,10 @@ def run_agent_logic(agent_config, input_data):
         }
         logging.info(f"Agent response: {result}")
         return result
-    except Exception as e:
+    except ValueError as e:
+        logging.error(f"Error in run_agent_logic: {e}", exc_info=True)
+        raise
+    except TypeError as e:
         logging.error(f"Error in run_agent_logic: {e}", exc_info=True)
         raise
 
@@ -347,7 +362,10 @@ def ingest_worker(
             }
 
             upload_index(vector_store_path, file_data)
-        except Exception as e:
+        except ValueError as e:
+            logging.error(f"Error in ingest_worker: {e}", exc_info=True)
+            raise
+        except TypeError as e:
             logging.error(f"Error in ingest_worker: {e}", exc_info=True)
             raise
     return {
@@ -540,6 +558,7 @@ def reingest_source_worker(self, source_id, user):
                                         logging.error(
                                             f"Failed deleting chunk {cid}: {de}"
                                         )
+                                        continue
                         logging.info(
                             f"Deleted {deleted} chunks from {len(removed_files)} removed files"
                         )
@@ -548,6 +567,7 @@ def reingest_source_worker(self, source_id, user):
                             f"Error during deletion of removed file chunks: {e}",
                             exc_info=True,
                         )
+                        raise
 
                 # 2) Add chunks from new files
                 added = 0
@@ -609,6 +629,7 @@ def reingest_source_worker(self, source_id, user):
                                     logging.warning(
                                         f"Could not update token count for {file_path}: {e}"
                                     )
+                                    continue
 
                             for d in chunked_new:
                                 meta = dict(d.extra_info or {})
@@ -632,6 +653,7 @@ def reingest_source_worker(self, source_id, user):
                         logging.error(
                             f"Error during ingestion of new files: {e}", exc_info=True
                         )
+                        raise
 
                 # 3) Update source directory structure timestamp
                 try:
@@ -651,6 +673,7 @@ def reingest_source_worker(self, source_id, user):
                     logging.error(
                         f"Error updating directory_structure in DB: {e}", exc_info=True
                     )
+                    raise
 
                 self.update_state(
                     state="PROGRESS",
@@ -1128,7 +1151,7 @@ def ingest_connector(
             raise
 
 
-def mcp_oauth(self, config: Dict[str, Any], user_id: str = None) -> Dict[str, Any]:
+def mcp_oauth(self, config: dict[str, Any], user_id: str = None) -> dict[str, Any]:
     """Worker to handle MCP OAuth flow asynchronously."""
 
     logging.info(

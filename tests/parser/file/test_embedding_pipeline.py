@@ -1,5 +1,5 @@
-import pytest
 import logging
+import pytest
 from unittest.mock import patch, MagicMock
 
 from application.parser.embedding_pipeline import (
@@ -109,7 +109,7 @@ def test_embed_and_store_documents_partial_failure(
     # First document succeeds, second fails
     def side_effect(*args, **kwargs):
         if "bad" in args[1].page_content:
-            raise Exception("Embedding failed")
+            raise RuntimeError("Embedding failed")
     mock_add_retry.side_effect = side_effect
 
     with caplog.at_level(logging.ERROR):

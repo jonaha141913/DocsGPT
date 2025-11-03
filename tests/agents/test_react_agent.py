@@ -1,7 +1,6 @@
-from unittest.mock import Mock, mock_open, patch
-
 import pytest
 from application.agents.react_agent import ReActAgent
+from unittest.mock import Mock, mock_open, patch
 
 
 @pytest.mark.unit

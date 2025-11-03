@@ -1,8 +1,8 @@
 import datetime
-from unittest.mock import MagicMock, patch
 
 import pytest
 from bson import ObjectId
+from unittest.mock import MagicMock, patch
 
 
 @pytest.mark.unit
@@ -186,7 +186,7 @@ class TestUsageChecking:
                     "api_key": "test_key",
                     "prompt_tokens": 60,
                     "generated_tokens": 50,
-                    "timestamp": datetime.datetime.now(),
+                    "timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
                 }
             )
 
@@ -221,8 +221,8 @@ class TestUsageChecking:
                 }
             )
 
-            now = datetime.datetime.now()
-            for i in range(3):
+            now = datetime.datetime.now(tz=datetime.timezone.utc)
+            for _ in range(3):
                 token_usage_collection.insert_one(
                     {
                         "_id": ObjectId(),
@@ -412,7 +412,7 @@ class TestCompleteStreamMethod:
                     resource.complete_stream(
                         question="Test?",
                         agent=mock_agent,
-                            conversation_id=None,
+                        conversation_id=None,
                         user_api_key=None,
                         decoded_token=decoded_token,
                         should_save_conversation=True,

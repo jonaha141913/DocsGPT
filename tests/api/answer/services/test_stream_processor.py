@@ -1,5 +1,6 @@
-import pytest
 from bson import ObjectId
+
+import pytest
 
 
 @pytest.mark.unit
@@ -199,7 +200,7 @@ class TestStreamProcessorAgentConfiguration:
         try:
             processor._configure_agent()
             assert processor.agent_config is not None
-        except Exception as e:
+        except ValueError as e:
             assert "Invalid API Key" in str(e)
 
     def test_uses_default_config_without_api_key(self, mock_mongo_db):
@@ -260,7 +261,7 @@ class TestToolPreFetch:
         """Test that cryptoprice tool is pre-fetched with saved parameter values from MongoDB structure"""
         from application.api.answer.services.stream_processor import StreamProcessor
         from application.core.settings import settings
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         # Setup MongoDB with cryptoprice tool configuration
         # NOTE: The collection is called "user_tools" not "tools"
@@ -369,7 +370,7 @@ class TestToolPreFetch:
         """Test that pre-fetch falls back to defaults when saved values are missing"""
         from application.api.answer.services.stream_processor import StreamProcessor
         from application.core.settings import settings
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         tools_collection = mock_mongo_db[settings.MONGO_DB_NAME]["user_tools"]
         tool_id = ObjectId()
@@ -518,7 +519,7 @@ class TestToolPreFetch:
         """Test that multiple tools with the same name can be distinguished by ID"""
         from application.api.answer.services.stream_processor import StreamProcessor
         from application.core.settings import settings
-        from unittest.mock import patch, MagicMock
+        from unittest.mock import MagicMock, patch
 
         tools_collection = mock_mongo_db[settings.MONGO_DB_NAME]["user_tools"]
 
