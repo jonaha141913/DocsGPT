@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from jinja2 import (
     ChainableUndefined,
@@ -16,8 +16,6 @@ logger = logging.getLogger(__name__)
 class TemplateRenderError(Exception):
     """Raised when template rendering fails"""
 
-    pass
-
 
 class TemplateEngine:
     """Jinja2-based template engine for dynamic prompt rendering"""
@@ -30,7 +28,7 @@ class TemplateEngine:
             autoescape=select_autoescape(default_for_string=True, default=True),
         )
 
-    def render(self, template_content: str, context: Dict[str, Any]) -> str:
+    def render(self, template_content: str, context: dict[str, Any]) -> str:
         """
         Render template with provided context.
 

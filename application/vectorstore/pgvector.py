@@ -276,6 +276,7 @@ class PGVectorStore(BaseVectorStore):
             raise
         finally:
             cursor.close()
+            conn.close()
 
     def delete_chunk(self, chunk_id: str) -> bool:
         """Delete a specific chunk by its ID"""
@@ -296,6 +297,7 @@ class PGVectorStore(BaseVectorStore):
             return False
         finally:
             cursor.close()
+            conn.close()
 
     def __del__(self):
         """Close database connection when object is destroyed"""

@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Any, Dict, Generator, List
+from collections.abc import Generator
+from typing import Any
 
 from application.agents.base import BaseAgent
 from application.logging import build_stack_data, LogContext
@@ -202,29 +203,24 @@ class ReActAgent(BaseAgent):
 
         if isinstance(response, str):
             return response
-        if hasattr(response, "message") and hasattr(response.message, "content"):
-            if response.message.content:
-                return response.message.content
-        if hasattr(response, "choices") and response.choices:
-            if hasattr(response.choices[0], "message"):
-                content = response.choices[0].message.content
-                if content:
-                    return content
-        if hasattr(response, "content") and isinstance(response.content, list):
-            if response.content and hasattr(response.content[0], "text"):
-                return response.content[0].text
+        if hasattr(response, "message") and hasattr(response.message, "content") and response.message.content:
+            return response.message.content
+        if hasattr(response, "choices") and response.choices and hasattr(response.choices[0], "message"):
+            content = response.choices[0].message.content
+            if content:
+                return content
+        if hasattr(response, "content") and isinstance(response.content, list) and response.content and hasattr(response.content[0], "text"):
+            return response.content[0].text
         try:
             for chunk in response:
                 content_piece = ""
 
-                if hasattr(chunk, "choices") and chunk.choices:
-                    if hasattr(chunk.choices[0], "delta"):
-                        delta_content = chunk.choices[0].delta.content
-                        if delta_content:
-                            content_piece = delta_content
-                elif hasattr(chunk, "type") and chunk.type == "content_block_delta":
-                    if hasattr(chunk, "delta") and hasattr(chunk.delta, "text"):
-                        content_piece = chunk.delta.text
+                if hasattr(chunk, "choices") and chunk.choices and hasattr(chunk.choices[0], "delta"):
+                    delta_content = chunk.choices[0].delta.content
+                    if delta_content:
+                        content_piece = delta_content
+                elif hasattr(chunk, "type") and chunk.type == "content_block_delta" and hasattr(chunk, "delta") and hasattr(chunk.delta, "text"):
+                    content_piece = chunk.delta.text
                 elif isinstance(chunk, str):
                     content_piece = chunk
                 if content_piece:

@@ -66,7 +66,7 @@ class TestMCPServerConfig(Resource):
 
             return make_response(jsonify(result), 200)
         except Exception as e:
-            current_app.logger.error(f"Error testing MCP server: {e}", exc_info=True)
+            current_app.logger.exception(f"Error testing MCP server: {e}")
             return make_response(
                 jsonify(
                     {"success": False, "error": f"Connection test failed: {str(e)}"}
@@ -159,7 +159,7 @@ class MCPServerSave(Resource):
                 mcp_tool.discover_tools()
                 actions_metadata = mcp_tool.get_actions_metadata()
             else:
-                raise Exception(
+                raise ValueError(
                     "No valid credentials provided for the selected authentication type"
                 )
             storage_config = config.copy()
@@ -231,7 +231,7 @@ class MCPServerSave(Resource):
                 }
             return make_response(jsonify(response_data), 200)
         except Exception as e:
-            current_app.logger.error(f"Error saving MCP server: {e}", exc_info=True)
+            current_app.logger.exception(f"Error saving MCP server: {e}")
             return make_response(
                 jsonify(
                     {"success": False, "error": f"Failed to save MCP server: {str(e)}"}
@@ -288,8 +288,8 @@ class MCPOAuthCallback(Resource):
                     "/api/connectors/callback-status?status=error&message=OAuth+callback+failed.&provider=mcp_tool"
                 )
         except Exception as e:
-            current_app.logger.error(
-                f"Error handling MCP OAuth callback: {str(e)}", exc_info=True
+            current_app.logger.exception(
+                f"Error handling MCP OAuth callback: {str(e)}"
             )
             return redirect(
                 f"/api/connectors/callback-status?status=error&message=Internal+server+error:+{str(e)}.&provider=mcp_tool"
@@ -325,7 +325,7 @@ class MCPOAuthStatus(Resource):
                     404,
                 )
         except Exception as e:
-            current_app.logger.error(
+            current_app.logger.exception(
                 f"Error getting OAuth status for task {task_id}: {str(e)}"
             )
             return make_response(

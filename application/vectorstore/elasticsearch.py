@@ -1,5 +1,5 @@
-from application.vectorstore.base import BaseVectorStore
 from application.core.settings import settings
+from application.vectorstore.base import BaseVectorStore
 from application.vectorstore.document_class import Document
 
 
@@ -28,6 +28,7 @@ class ElasticsearchStore(BaseVectorStore):
             
         self.docsearch = ElasticsearchStore._es_connection
 
+    @staticmethod
     def connect_to_elasticsearch(
         *,
         es_url = None,
@@ -115,13 +116,12 @@ class ElasticsearchStore(BaseVectorStore):
 
         if self._es_connection.indices.exists(index=index_name):
             print(f"Index {index_name} already exists.")
+            return
 
-        else:
-
-            indexSettings = self.index(
-                dims_length=dims_length,
-            )
-            self._es_connection.indices.create(index=index_name, **indexSettings)
+        indexSettings = self.index(
+            dims_length=dims_length,
+        )
+        self._es_connection.indices.create(index=index_name, **indexSettings)
 
     def index(
             self,
@@ -152,7 +152,6 @@ class ElasticsearchStore(BaseVectorStore):
         ):
         
         bulk_kwargs = bulk_kwargs or {}
-        import uuid
         embeddings = []
         ids = ids or [str(uuid.uuid4()) for _ in texts]
         requests = []
@@ -183,7 +182,6 @@ class ElasticsearchStore(BaseVectorStore):
 
 
         if len(requests) > 0:
-            from elasticsearch.helpers import BulkIndexError, bulk
             try:
                 success, failed = bulk(
                     self._es_connection,

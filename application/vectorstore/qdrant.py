@@ -1,6 +1,7 @@
 import logging
-from application.vectorstore.base import BaseVectorStore
+
 from application.core.settings import settings
+from application.vectorstore.base import BaseVectorStore
 from application.vectorstore.document_class import Document
 
 
@@ -103,8 +104,8 @@ class QdrantStore(BaseVectorStore):
                 if offset is None:
                     break
             return chunks
-        except Exception as e:
-            logging.error(f"Error getting chunks: {e}", exc_info=True)
+        except Exception:
+            logging.exception("Error getting chunks")
             return []
 
     def add_chunk(self, text, metadata=None):
@@ -131,6 +132,6 @@ class QdrantStore(BaseVectorStore):
                 points_selector=[chunk_id],
             )
             return True
-        except Exception as e:
-            logging.error(f"Error deleting chunk: {e}", exc_info=True)
+        except Exception:
+            logging.exception("Error deleting chunk")
             return False

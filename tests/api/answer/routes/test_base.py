@@ -1,8 +1,8 @@
 import datetime
-from unittest.mock import MagicMock, patch
 
 import pytest
 from bson import ObjectId
+from unittest.mock import MagicMock, patch
 
 
 @pytest.mark.unit
@@ -186,7 +186,7 @@ class TestUsageChecking:
                     "api_key": "test_key",
                     "prompt_tokens": 60,
                     "generated_tokens": 50,
-                    "timestamp": datetime.datetime.now(),
+                    "timestamp": datetime.datetime.now(datetime.timezone.utc),
                 }
             )
 
@@ -221,7 +221,7 @@ class TestUsageChecking:
                 }
             )
 
-            now = datetime.datetime.now()
+            now = datetime.datetime.now(datetime.timezone.utc)
             for i in range(3):
                 token_usage_collection.insert_one(
                     {
@@ -435,9 +435,6 @@ class TestCompleteStreamMethod:
                     {"answer": "Test answer"},
                 ]
             )
-
-            mock_retriever = MagicMock()
-            mock_retriever.get_params.return_value = {"retriever": "test"}
 
             decoded_token = {"sub": "user123"}
 

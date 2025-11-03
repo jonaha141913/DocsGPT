@@ -121,7 +121,7 @@ def test_raw_gen_calls_openai_client_and_returns_content(openai_llm):
         {"role": "user", "content": "hello"},
     ]
     content = openai_llm._raw_gen(
-        openai_llm, model="gpt-4o", messages=msgs, stream=False
+        model="gpt-4o", messages=msgs, stream=False
     )
     assert content == "hello world"
 
@@ -137,7 +137,7 @@ def test_raw_gen_stream_yields_chunks(openai_llm):
         {"role": "user", "content": "hi"},
     ]
     gen = openai_llm._raw_gen_stream(
-        openai_llm, model="gpt", messages=msgs, stream=True
+        model="gpt", messages=msgs, stream=True
     )
     chunks = list(gen)
     assert "part1" in "".join(chunks)

@@ -1,8 +1,8 @@
-from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional
 import re
 import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
 
 from .base import Tool
 from application.core.mongo_db import MongoDB
@@ -15,7 +15,7 @@ class MemoryTool(Tool):
     Stores and retrieves information across conversations through a memory file directory.
     """
 
-    def __init__(self, tool_config: Optional[Dict[str, Any]] = None, user_id: Optional[str] = None) -> None:
+    def __init__(self, tool_config: dict[str, Any] | None = None, user_id: str | None = None) -> None:
         """Initialize the tool.
 
         Args:
@@ -258,13 +258,13 @@ class MemoryTool(Tool):
                 normalized = normalized + "/"
 
             return normalized
-        except Exception:
+        except Exception as e:
             return None
 
     # -----------------------------
     # Internal helpers
     # -----------------------------
-    def _view(self, path: str, view_range: Optional[List[int]] = None) -> str:
+    def _view(self, path: str, view_range: list[int] | None = None) -> str:
         """View directory contents or file contents."""
         validated_path = self._validate_path(path)
         if not validated_path:
@@ -308,7 +308,7 @@ class MemoryTool(Tool):
         file_list = "\n".join(f"- {f}" for f in files)
         return f"Directory: {path}\n{file_list}"
 
-    def _view_file(self, path: str, view_range: Optional[List[int]] = None) -> str:
+    def _view_file(self, path: str, view_range: list[int] | None = None) -> str:
         """View file contents with optional line range."""
         doc = self.collection.find_one({"user_id": self.user_id, "tool_id": self.tool_id, "path": path})
 
@@ -349,7 +349,7 @@ class MemoryTool(Tool):
             {
                 "$set": {
                     "content": file_text,
-                    "updated_at": datetime.now()
+                    "updated_at": datetime.now(timezone.utc)
                 }
             },
             upsert=True
@@ -386,7 +386,7 @@ class MemoryTool(Tool):
             {
                 "$set": {
                     "content": updated_content,
-                    "updated_at": datetime.now()
+                    "updated_at": datetime.now(timezone.utc)
                 }
             }
         )
@@ -423,7 +423,7 @@ class MemoryTool(Tool):
             {
                 "$set": {
                     "content": updated_content,
-                    "updated_at": datetime.now()
+                    "updated_at": datetime.now(timezone.utc)
                 }
             }
         )
@@ -508,7 +508,7 @@ class MemoryTool(Tool):
 
                 self.collection.update_one(
                     {"_id": doc["_id"]},
-                    {"$set": {"path": new_file_path, "updated_at": datetime.now()}}
+                    {"$set": {"path": new_file_path, "updated_at": datetime.now(timezone.utc)}}
                 )
 
             return f"Renamed directory: {validated_old} -> {validated_new} ({len(docs)} files)"

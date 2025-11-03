@@ -92,7 +92,7 @@ class StoreAttachment(Resource):
                         "attachment_id": str(attachment_id),
                     })
                 except Exception as file_err:
-                    current_app.logger.error(f"Error processing file {idx} ({file.filename}): {file_err}", exc_info=True)
+                    current_app.logger.exception(f"Error processing file {idx} ({file.filename}): {file_err}")
                     errors.append({
                         "filename": file.filename,
                         "error": str(file_err)

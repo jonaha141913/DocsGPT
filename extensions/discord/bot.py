@@ -1,10 +1,11 @@
+import logging
 import os
 import re
-import logging
+
 import aiohttp
 import discord
-from discord.ext import commands
 import dotenv
+from discord.ext import commands
 
 dotenv.load_dotenv()
 
@@ -66,6 +67,9 @@ def split_string(input_str):
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
 
+
+bot = commands.Bot(command_prefix=PREFIX, intents=intents)
+
 async def generate_answer(question, messages, conversation_id):
     """Generates an answer using the external API."""
     payload = {
@@ -91,7 +95,7 @@ async def generate_answer(question, messages, conversation_id):
 @bot.command(name="start")
 async def start(ctx):
     """Handles the /start command."""
-    await ctx.send(f"Hi {ctx.author.mention}! How can I assist you today?")
+    await ctx.send("Hi {}! How can I assist you today?".format(ctx.author.mention))
 
 @bot.command(name="custom_help")
 async def custom_help_command(ctx):

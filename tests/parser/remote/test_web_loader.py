@@ -277,7 +277,6 @@ class TestWebLoaderIntegration:
 
     def test_inherits_from_base_remote(self, web_loader):
         """Test that WebLoader inherits from BaseRemote."""
-        from application.parser.remote.base import BaseRemote
         assert isinstance(web_loader, BaseRemote)
 
     def test_implements_load_data_method(self, web_loader):

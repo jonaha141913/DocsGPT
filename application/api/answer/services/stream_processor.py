@@ -349,7 +349,7 @@ class StreamProcessor:
             decoded_token=self.decoded_token,
         )
 
-    def pre_fetch_docs(self, question: str) -> tuple[Optional[str], Optional[list]]:
+    def pre_fetch_docs(self, question: str) -> tuple[str | None, list | None]:
         """Pre-fetch documents for template rendering before agent creation"""
         if self.data.get("isNoneDoc", False):
             logger.info("Pre-fetch skipped: isNoneDoc=True")
@@ -381,10 +381,10 @@ class StreamProcessor:
 
             return docs_together, docs
         except Exception as e:
-            logger.error(f"Failed to pre-fetch docs: {str(e)}", exc_info=True)
+            logger.exception(f"Failed to pre-fetch docs: {str(e)}")
             return None, None
 
-    def pre_fetch_tools(self) -> Optional[Dict[str, Any]]:
+    def pre_fetch_tools(self) -> dict[str, Any] | None:
         """Pre-fetch tool data for template rendering before agent creation
 
         Can be controlled via:
@@ -446,9 +446,9 @@ class StreamProcessor:
 
     def _fetch_tool_data(
         self,
-        tool_doc: Dict[str, Any],
-        required_actions: Optional[Set[Optional[str]]],
-    ) -> Optional[Dict[str, Any]]:
+        tool_doc: dict[str, Any],
+        required_actions: set[str | None] | None,
+    ) -> dict[str, Any] | None:
         """Fetch and execute tool actions with saved parameters"""
         try:
             from application.agents.tools.tool_manager import ToolManager
@@ -475,7 +475,7 @@ class StreamProcessor:
             include_all_actions = required_actions is None or (
                 required_actions and None in required_actions
             )
-            allowed_actions: Set[str] = (
+            allowed_actions: set[str] = (
                 {action for action in required_actions if isinstance(action, str)}
                 if required_actions
                 else set()
@@ -534,7 +534,7 @@ class StreamProcessor:
             logger.debug(f"Tool pre-fetch failed for '{tool_name}': {type(e).__name__}")
             return None
 
-    def _get_prompt_content(self) -> Optional[str]:
+    def _get_prompt_content(self) -> str | None:
         """Retrieve and cache the raw prompt content for the current agent configuration."""
         if self._prompt_content is not None:
             return self._prompt_content
@@ -555,7 +555,7 @@ class StreamProcessor:
             self._prompt_content = None
         return self._prompt_content
 
-    def _get_required_tool_actions(self) -> Optional[Dict[str, Set[Optional[str]]]]:
+    def _get_required_tool_actions(self) -> dict[str, set[str | None]] | None:
         """Determine which tool actions are referenced in the prompt template"""
         if self._required_tool_actions is not None:
             return self._required_tool_actions
@@ -581,8 +581,8 @@ class StreamProcessor:
             return self._required_tool_actions
 
     def _fetch_memory_tool_data(
-        self, tool_doc: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+        self, tool_doc: dict[str, Any]
+    ) -> dict[str, Any] | None:
         """Fetch memory tool data for pre-injection into prompt"""
         try:
             tool_config = tool_doc.get("config", {}).copy()

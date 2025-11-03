@@ -5,7 +5,6 @@ Contains parser for md files.
 """
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
 
 from application.parser.file.base_parser import BaseParser
 
@@ -138,13 +137,13 @@ class RstParser(BaseParser):
         content = re.sub(pattern, "", content, flags=re.MULTILINE)
         return content
 
-    def remove_whitespaces_excess(self, content: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+    def remove_whitespaces_excess(self, content: list[tuple[Optional[str], str]]) -> list[tuple[Optional[str], str]]:
         """Pattern to match 2 or more consecutive whitespaces"""
         pattern = r"\s{2,}"
         content = [(key, re.sub(pattern, "  ", value)) for key, value in content]
         return content
 
-    def remove_characters_excess(self, content: List[Tuple[str, Any]]) -> List[Tuple[str, Any]]:
+    def remove_characters_excess(self, content: list[tuple[Optional[str], str]]) -> list[tuple[Optional[str], str]]:
         """Pattern to match 2 or more consecutive characters"""
         pattern = r"(\S)\1{2,}"
         content = [(key, re.sub(pattern, r"\1\1\1", value, flags=re.MULTILINE)) for key, value in content]
@@ -155,8 +154,8 @@ class RstParser(BaseParser):
         return {}
 
     def parse_tups(
-            self, filepath: Path, errors: str = "ignore",max_tokens: Optional[int] = 1000
-    ) -> List[Tuple[Optional[str], str]]:
+            self, filepath: Path, errors: str = "ignore", max_tokens: int = 1000
+    ) -> list[tuple[Optional[str], str]]:
         """Parse file into tuples."""
         with open(filepath, "r") as f:
             content = f.read()

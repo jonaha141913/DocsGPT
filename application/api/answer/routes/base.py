@@ -322,12 +322,10 @@ class BaseAnswerResource:
                         attachment_ids=attachment_ids,
                     )
                 except Exception as e:
-                    logger.error(
-                        f"Error saving partial response: {str(e)}", exc_info=True
-                    )
+                    logger.exception(f"Error saving partial response: {str(e)}")
             raise
         except Exception as e:
-            logger.error(f"Error in stream: {str(e)}", exc_info=True)
+            logger.exception(f"Error in stream: {str(e)}")
             data = json.dumps(
                 {
                     "type": "error",
