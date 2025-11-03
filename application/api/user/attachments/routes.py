@@ -92,7 +92,7 @@ class StoreAttachment(Resource):
                         "attachment_id": str(attachment_id),
                     })
                 except Exception as file_err:
-                    current_app.logger.error(f"Error processing file {idx} ({file.filename}): {file_err}", exc_info=True)
+                    current_app.logger.exception(f"Error processing file {idx} ({file.filename})")
                     errors.append({
                         "filename": file.filename,
                         "error": str(file_err)
@@ -134,7 +134,7 @@ class StoreAttachment(Resource):
                     200,
                 )
         except Exception as err:
-            current_app.logger.error(f"Error storing attachment: {err}", exc_info=True)
+            current_app.logger.exception(f"Error storing attachment")
             return make_response(jsonify({"success": False, "error": str(err)}), 400)
 
 
@@ -194,5 +194,5 @@ class TextToSpeech(Resource):
                 200,
             )
         except Exception as err:
-            current_app.logger.error(f"Error synthesizing audio: {err}", exc_info=True)
+            current_app.logger.exception(f"Error synthesizing audio")
             return make_response(jsonify({"success": False}), 400)

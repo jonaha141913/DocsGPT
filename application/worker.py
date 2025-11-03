@@ -6,7 +6,6 @@ import os
 import shutil
 import string
 import tempfile
-from typing import Any, Dict
 import zipfile
 
 from collections import Counter
@@ -18,7 +17,6 @@ from bson.objectid import ObjectId
 
 from application.agents.agent_creator import AgentCreator
 from application.api.answer.services.stream_processor import get_prompt
-
 from application.cache import get_redis_instance
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
@@ -29,7 +27,6 @@ from application.parser.file.bulk import SimpleDirectoryReader
 from application.parser.remote.remote_creator import RemoteCreator
 from application.parser.schema.base import Document
 from application.retriever.retriever_creator import RetrieverCreator
-
 from application.storage.storage_creator import StorageCreator
 from application.utils import count_tokens_docs, num_tokens_from_string
 
@@ -81,8 +78,8 @@ def extract_zip_recursive(zip_path, extract_to, current_depth=0, max_depth=5):
         with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_to)
         os.remove(zip_path)  # Remove the zip file after extracting
-    except Exception as e:
-        logging.error(f"Error extracting zip file {zip_path}: {e}", exc_info=True)
+    except zipfile.BadZipFile as e:
+        logging.exception(f"Error extracting zip file {zip_path}")
         return
     # Check for nested zip files and extract them
 
@@ -102,7 +99,7 @@ def download_file(url, params, dest_path):
         with open(dest_path, "wb") as f:
             f.write(response.content)
     except requests.RequestException as e:
-        logging.error(f"Error downloading file: {e}")
+        logging.exception(f"Error downloading file: {e}")
         raise
 
 
@@ -136,7 +133,7 @@ def upload_index(full_path, file_data):
             )
         response.raise_for_status()
     except (requests.RequestException, FileNotFoundError) as e:
-        logging.error(f"Error uploading index: {e}")
+        logging.exception(f"Error uploading index: {e}")
         raise
     finally:
         if settings.VECTOR_STORE == "faiss" and files is not None:
@@ -208,7 +205,7 @@ def run_agent_logic(agent_config, input_data):
         logging.info(f"Agent response: {result}")
         return result
     except Exception as e:
-        logging.error(f"Error in run_agent_logic: {e}", exc_info=True)
+        logging.exception(f"Error in run_agent_logic")
         raise
 
 
@@ -270,7 +267,7 @@ def ingest_worker(
                         file_data = storage.get_file(storage_file_path)
                         with open(local_file_path, "wb") as f:
                             f.write(file_data.read())
-                    except Exception as e:
+                    except (IOError, OSError) as e:
                         logging.error(
                             f"Error downloading file {storage_file_path}: {e}"
                         )
@@ -348,7 +345,7 @@ def ingest_worker(
 
             upload_index(vector_store_path, file_data)
         except Exception as e:
-            logging.error(f"Error in ingest_worker: {e}", exc_info=True)
+            logging.exception(f"Error in ingest_worker")
             raise
     return {
         "directory": directory,
@@ -412,7 +409,7 @@ def reingest_source_worker(self, source_id, user):
                         file_data = storage.get_file(storage_file_path)
                         with open(local_file_path, "wb") as f:
                             f.write(file_data.read())
-                    except Exception as e:
+                    except (IOError, OSError) as e:
                         logging.error(
                             f"Error downloading file {storage_file_path}: {e}"
                         )
@@ -488,9 +485,9 @@ def reingest_source_worker(self, source_id, user):
                 else:
                     logging.info("No files removed since last ingest.")
 
-            except Exception as e:
-                logging.error(
-                    f"Error comparing directory structures: {e}", exc_info=True
+            except (ValueError, TypeError) as e:
+                logging.exception(
+                    f"Error comparing directory structures"
                 )
                 added_files = []
                 removed_files = []
@@ -537,16 +534,15 @@ def reingest_source_worker(self, source_id, user):
                                         vector_store.delete_chunk(cid)
                                         deleted += 1
                                     except Exception as de:
-                                        logging.error(
+                                        logging.warning(
                                             f"Failed deleting chunk {cid}: {de}"
                                         )
                         logging.info(
                             f"Deleted {deleted} chunks from {len(removed_files)} removed files"
                         )
                     except Exception as e:
-                        logging.error(
-                            f"Error during deletion of removed file chunks: {e}",
-                            exc_info=True,
+                        logging.exception(
+                            f"Error during deletion of removed file chunks"
                         )
 
                 # 2) Add chunks from new files
@@ -620,7 +616,7 @@ def reingest_source_worker(self, source_id, user):
                                         meta["source"] = os.path.relpath(
                                             raw_src, start=temp_dir
                                         )
-                                except Exception:
+                                except (ValueError, TypeError):
                                     pass
 
                                 vector_store.add_chunk(d.text, metadata=meta)
@@ -648,8 +644,8 @@ def reingest_source_worker(self, source_id, user):
                         },
                     )
                 except Exception as e:
-                    logging.error(
-                        f"Error updating directory_structure in DB: {e}", exc_info=True
+                    logging.exception(
+                        f"Error updating directory_structure in DB"
                     )
 
                 self.update_state(
@@ -667,13 +663,13 @@ def reingest_source_worker(self, source_id, user):
                     "chunks_deleted": deleted,
                 }
             except Exception as e:
-                logging.error(
-                    f"Error while processing file changes: {e}", exc_info=True
+                logging.exception(
+                    f"Error while processing file changes"
                 )
                 raise
 
     except Exception as e:
-        logging.error(f"Error in reingest_source_worker: {e}", exc_info=True)
+        logging.exception(f"Error in reingest_source_worker")
         raise
 
 
@@ -707,7 +703,7 @@ def remote_worker(
         docs = chunker.chunk(documents=raw_docs)
         docs = [Document.to_langchain_format(raw_doc) for raw_doc in raw_docs]
         tokens = count_tokens_docs(docs)
-        logging.info("Total tokens calculated: %d", tokens)
+        logging.info("Total tokens calculated: %s", tokens)
 
         if operation_mode == "upload":
             id = ObjectId()
@@ -735,7 +731,7 @@ def remote_worker(
             file_data["last_sync"] = datetime.datetime.now()
         upload_index(full_path, file_data)
     except Exception as e:
-        logging.error("Error in remote_worker task: %s", str(e), exc_info=True)
+        logging.exception("Error in remote_worker task")
         raise
     finally:
         if os.path.exists(full_path):
@@ -775,7 +771,7 @@ def sync(
             doc_id,
         )
     except Exception as e:
-        logging.error(f"Error during sync: {e}", exc_info=True)
+        logging.exception(f"Error during sync")
         return {"status": "error", "error": str(e)}
     return {"status": "success"}
 
@@ -876,10 +872,9 @@ def attachment_worker(self, file_info, user):
             "metadata": metadata,
         }
     except Exception as e:
-        logging.error(
-            f"Error processing file {filename}: {e}",
+        logging.exception(
+            f"Error processing file {filename}",
             extra={"user": user},
-            exc_info=True,
         )
         raise
 
@@ -908,20 +903,20 @@ def agent_webhook_worker(self, agent_id, payload):
             raise ValueError(f"Agent with ID {agent_id} not found.")
         input_data = json.dumps(payload)
     except Exception as e:
-        logging.error(f"Error processing agent webhook: {e}", exc_info=True)
+        logging.exception(f"Error processing agent webhook")
         return {"status": "error", "error": str(e)}
     self.update_state(state="PROGRESS", meta={"current": 50})
     try:
         result = run_agent_logic(agent_config, input_data)
     except Exception as e:
-        logging.error(f"Error running agent logic: {e}", exc_info=True)
+        logging.exception(f"Error running agent logic")
         return {"status": "error", "error": str(e)}
     finally:
         self.update_state(state="PROGRESS", meta={"current": 100})
         logging.info(
             f"Webhook processed for agent {agent_id}", extra={"agent_id": agent_id}
         )
-        return {"status": "success", "result": result}
+    return {"status": "success", "result": result}
 
 
 def ingest_connector(
@@ -1124,7 +1119,7 @@ def ingest_connector(
             }
 
         except Exception as e:
-            logging.error(f"Error during remote ingestion: {e}", exc_info=True)
+            logging.exception(f"Error during remote ingestion")
             raise
 
 

@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Any, Dict, Generator, List
+from collections.abc import Generator
+from typing import Any
 
 from application.agents.base import BaseAgent
 from application.logging import build_stack_data, LogContext
@@ -202,17 +203,14 @@ class ReActAgent(BaseAgent):
 
         if isinstance(response, str):
             return response
-        if hasattr(response, "message") and hasattr(response.message, "content"):
-            if response.message.content:
-                return response.message.content
-        if hasattr(response, "choices") and response.choices:
-            if hasattr(response.choices[0], "message"):
-                content = response.choices[0].message.content
-                if content:
-                    return content
-        if hasattr(response, "content") and isinstance(response.content, list):
-            if response.content and hasattr(response.content[0], "text"):
-                return response.content[0].text
+        if hasattr(response, "message") and hasattr(response.message, "content") and response.message.content:
+            return response.message.content
+        if hasattr(response, "choices") and response.choices and hasattr(response.choices[0], "message"):
+            content = response.choices[0].message.content
+            if content:
+                return content
+        if hasattr(response, "content") and isinstance(response.content, list) and response.content and hasattr(response.content[0], "text"):
+            return response.content[0].text
         try:
             for chunk in response:
                 content_piece = ""
@@ -233,6 +231,6 @@ class ReActAgent(BaseAgent):
             logger.debug(
                 f"Response not iterable or unexpected format: {type(response)}"
             )
-        except Exception as e:
+        except BaseException as e:
             logger.error(f"Error extracting content: {e}")
         return "".join(collected)
