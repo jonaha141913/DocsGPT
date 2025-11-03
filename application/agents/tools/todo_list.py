@@ -1,10 +1,11 @@
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 import uuid
+from datetime import datetime, timezone
+from typing import Any
 
-from .base import Tool
 from application.core.mongo_db import MongoDB
 from application.core.settings import settings
+
+from .base import Tool
 
 
 class TodoListTool(Tool):
@@ -13,7 +14,7 @@ class TodoListTool(Tool):
     Manages todo items for users. Supports creating, viewing, updating, and deleting todos.
     """
 
-    def __init__(self, tool_config: Optional[Dict[str, Any]] = None, user_id: Optional[str] = None) -> None:
+    def __init__(self, tool_config: dict[str, Any] | None = None, user_id: str | None = None) -> None:
         """Initialize the tool.
 
         Args:
@@ -22,7 +23,7 @@ class TodoListTool(Tool):
                            This ensures each user's tool configuration has isolated todos
             user_id: The authenticated user's id (should come from decoded_token["sub"]).
         """
-        self.user_id: Optional[str] = user_id
+        self.user_id: str | None = user_id
 
         # Get tool_id from configuration (passed from user_tools._id in production)
         # In production, tool_id is the MongoDB ObjectId string from user_tools collection
@@ -77,7 +78,7 @@ class TodoListTool(Tool):
 
         return f"Unknown action: {action_name}"
 
-    def get_actions_metadata(self) -> List[Dict[str, Any]]:
+    def get_actions_metadata(self) -> list[dict[str, Any]]:
         """Return JSON metadata describing supported actions for tool schemas."""
         return [
             {
@@ -161,14 +162,14 @@ class TodoListTool(Tool):
             },
         ]
 
-    def get_config_requirements(self) -> Dict[str, Any]:
+    def get_config_requirements(self) -> dict[str, Any]:
         """Return configuration requirements."""
         return {}
 
     # -----------------------------
     # Internal helpers
     # -----------------------------
-    def _coerce_todo_id(self, value: Optional[Any]) -> Optional[int]:
+    def _coerce_todo_id(self, value: Any | None) -> int | None:
         """Convert todo identifiers to sequential integers."""
         if value is None:
             return None
@@ -230,7 +231,7 @@ class TodoListTool(Tool):
         if not title:
             return "Error: Title is required."
 
-        now = datetime.now()
+        now = datetime.now(timezone.utc)
         todo_id = self._get_next_todo_id()
 
         doc = {
@@ -245,7 +246,7 @@ class TodoListTool(Tool):
         self.collection.insert_one(doc)
         return f"Todo created with ID {todo_id}: {title}"
 
-    def _get(self, todo_id: Optional[Any]) -> str:
+    def _get(self, todo_id: Any | None) -> str:
         """Get a specific todo by ID."""
         parsed_todo_id = self._coerce_todo_id(todo_id)
         if parsed_todo_id is None:
@@ -267,7 +268,7 @@ class TodoListTool(Tool):
 
         return result
 
-    def _update(self, todo_id: Optional[Any], title: str) -> str:
+    def _update(self, todo_id: Any | None, title: str) -> str:
         """Update a todo's title by ID."""
         parsed_todo_id = self._coerce_todo_id(todo_id)
         if parsed_todo_id is None:
@@ -279,7 +280,7 @@ class TodoListTool(Tool):
 
         result = self.collection.update_one(
             {"user_id": self.user_id, "tool_id": self.tool_id, "todo_id": parsed_todo_id},
-            {"$set": {"title": title, "updated_at": datetime.now()}}
+            {"$set": {"title": title, "updated_at": datetime.now(timezone.utc)}}
         )
 
         if result.matched_count == 0:
@@ -287,7 +288,7 @@ class TodoListTool(Tool):
 
         return f"Todo {parsed_todo_id} updated to: {title}"
 
-    def _complete(self, todo_id: Optional[Any]) -> str:
+    def _complete(self, todo_id: Any | None) -> str:
         """Mark a todo as completed."""
         parsed_todo_id = self._coerce_todo_id(todo_id)
         if parsed_todo_id is None:
@@ -295,7 +296,7 @@ class TodoListTool(Tool):
 
         result = self.collection.update_one(
             {"user_id": self.user_id, "tool_id": self.tool_id, "todo_id": parsed_todo_id},
-            {"$set": {"status": "completed", "updated_at": datetime.now()}}
+            {"$set": {"status": "completed", "updated_at": datetime.now(timezone.utc)}}
         )
 
         if result.matched_count == 0:
@@ -303,7 +304,7 @@ class TodoListTool(Tool):
 
         return f"Todo {parsed_todo_id} marked as completed."
 
-    def _delete(self, todo_id: Optional[Any]) -> str:
+    def _delete(self, todo_id: Any | None) -> str:
         """Delete a specific todo by ID."""
         parsed_todo_id = self._coerce_todo_id(todo_id)
         if parsed_todo_id is None:

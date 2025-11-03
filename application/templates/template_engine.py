@@ -1,12 +1,12 @@
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from jinja2 import (
     ChainableUndefined,
     Environment,
+    TemplateSyntaxError,
     nodes,
     select_autoescape,
-    TemplateSyntaxError,
 )
 from jinja2.exceptions import UndefinedError
 
@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 
 class TemplateRenderError(Exception):
     """Raised when template rendering fails"""
-
-    pass
 
 
 class TemplateEngine:
@@ -30,7 +28,7 @@ class TemplateEngine:
             autoescape=select_autoescape(default_for_string=True, default=True),
         )
 
-    def render(self, template_content: str, context: Dict[str, Any]) -> str:
+    def render(self, template_content: str, context: dict[str, Any]) -> str:
         """
         Render template with provided context.
 
@@ -58,7 +56,7 @@ class TemplateEngine:
             logger.error(error_msg)
             raise TemplateRenderError(error_msg) from e
         except Exception as e:
-            error_msg = f"Template rendering failed: {str(e)}"
+            error_msg = f"Template rendering failed: {e!s}"
             logger.error(error_msg)
             raise TemplateRenderError(error_msg) from e
 
@@ -80,11 +78,11 @@ class TemplateEngine:
         except TemplateSyntaxError as e:
             logger.debug(f"Template syntax invalid at line {e.lineno}: {e.message}")
             return False
-        except Exception as e:
-            logger.debug(f"Template validation error: {type(e).__name__}: {str(e)}")
+        except Exception as e:  # noqa: BLE001
+            logger.debug(f"Template validation error: {type(e).__name__}: {e!s}")
             return False
 
-    def extract_variables(self, template_content: str) -> Set[str]:
+    def extract_variables(self, template_content: str) -> set[str]:
         """
         Extract all variable names from template.
 
@@ -102,13 +100,13 @@ class TemplateEngine:
         except TemplateSyntaxError as e:
             logger.debug(f"Cannot extract variables - syntax error at line {e.lineno}")
             return set()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug(f"Cannot extract variables: {type(e).__name__}")
             return set()
 
     def extract_tool_usages(
         self, template_content: str
-    ) -> Dict[str, Set[Optional[str]]]:
+    ) -> dict[str, set[str | None]]:
         """Extract tool and action references from a template"""
         if not template_content:
             return {}
@@ -117,13 +115,13 @@ class TemplateEngine:
         except TemplateSyntaxError as e:
             logger.debug(f"extract_tool_usages - syntax error at line {e.lineno}")
             return {}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.debug(f"extract_tool_usages - parse error: {type(e).__name__}")
             return {}
 
-        usages: Dict[str, Set[Optional[str]]] = {}
+        usages: dict[str, set[str | None]] = {}
 
-        def record(path: List[str]) -> None:
+        def record(path: list[str]) -> None:
             if not path:
                 return
             tool_name = path[0]

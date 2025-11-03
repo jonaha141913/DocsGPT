@@ -1,9 +1,10 @@
 import logging
 import os
-from typing import Any, Dict, Generator, List
+from collections.abc import Generator
+from typing import Any
 
 from application.agents.base import BaseAgent
-from application.logging import build_stack_data, LogContext
+from application.logging import LogContext, build_stack_data
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +37,11 @@ class ReActAgent(BaseAgent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.plan: str = ""
-        self.observations: List[str] = []
+        self.observations: list[str] = []
 
     def _gen_inner(
         self, query: str, log_context: LogContext
-    ) -> Generator[Dict, None, None]:
+    ) -> Generator[dict, None, None]:
         """Execute ReAct reasoning loop with planning, action, and observation cycles"""
 
         self._reset_state()
@@ -78,7 +79,7 @@ class ReActAgent(BaseAgent):
 
     def _planning_phase(
         self, query: str, log_context: LogContext
-    ) -> Generator[Dict, None, None]:
+    ) -> Generator[dict, None, None]:
         """Generate strategic plan for query"""
         logger.info("ReActAgent: Creating plan...")
 
@@ -104,7 +105,7 @@ class ReActAgent(BaseAgent):
         self.plan = "".join(plan_parts)
 
     def _execution_phase(
-        self, query: str, tools_dict: Dict, log_context: LogContext
+        self, query: str, tools_dict: dict, log_context: LogContext
     ) -> Generator[bool, None, None]:
         """Execute plan with tool calls and observations"""
         execution_prompt = self._build_execution_prompt(query)
@@ -143,7 +144,7 @@ class ReActAgent(BaseAgent):
 
     def _synthesis_phase(
         self, query: str, log_context: LogContext
-    ) -> Generator[Dict, None, None]:
+    ) -> Generator[dict, None, None]:
         """Synthesize final answer from all observations"""
         logger.info("ReActAgent: Generating final answer...")
 
@@ -202,17 +203,27 @@ class ReActAgent(BaseAgent):
 
         if isinstance(response, str):
             return response
-        if hasattr(response, "message") and hasattr(response.message, "content"):
-            if response.message.content:
-                return response.message.content
-        if hasattr(response, "choices") and response.choices:
-            if hasattr(response.choices[0], "message"):
-                content = response.choices[0].message.content
-                if content:
-                    return content
-        if hasattr(response, "content") and isinstance(response.content, list):
-            if response.content and hasattr(response.content[0], "text"):
-                return response.content[0].text
+        if (
+            hasattr(response, "message")
+            and hasattr(response.message, "content")
+            and response.message.content
+        ):
+            return response.message.content
+        if (
+            hasattr(response, "choices")
+            and response.choices
+            and hasattr(response.choices[0], "message")
+        ):
+            content = response.choices[0].message.content
+            if content:
+                return content
+        if (
+            hasattr(response, "content")
+            and isinstance(response.content, list)
+            and response.content
+            and hasattr(response.content[0], "text")
+        ):
+            return response.content[0].text
         try:
             for chunk in response:
                 content_piece = ""
@@ -233,6 +244,6 @@ class ReActAgent(BaseAgent):
             logger.debug(
                 f"Response not iterable or unexpected format: {type(response)}"
             )
-        except Exception as e:
-            logger.error(f"Error extracting content: {e}")
+        except Exception:
+            logger.exception("Error extracting content")
         return "".join(collected)

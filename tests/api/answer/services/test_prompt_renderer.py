@@ -679,11 +679,12 @@ class TestStreamProcessorPromptRendering:
     def test_pre_fetch_tools_skips_tool_with_no_actions(self, mock_mongo_db):
         from unittest.mock import MagicMock, patch
 
-        from application.api.answer.services.stream_processor import StreamProcessor
-        from application.core.mongo_db import MongoDB
         from bson import ObjectId
 
-        db = MongoDB.get_client()[list(MongoDB.get_client().keys())[0]]
+        from application.api.answer.services.stream_processor import StreamProcessor
+        from application.core.mongo_db import MongoDB
+
+        db = MongoDB.get_client()[next(iter(MongoDB.get_client().keys()))]
         tool_doc = {
             "_id": ObjectId(),
             "name": "memory",
@@ -717,11 +718,12 @@ class TestStreamProcessorPromptRendering:
     def test_pre_fetch_tools_enabled_by_default(self, mock_mongo_db, monkeypatch):
         from unittest.mock import MagicMock, patch
 
-        from application.api.answer.services.stream_processor import StreamProcessor
-        from application.core.mongo_db import MongoDB
         from bson import ObjectId
 
-        db = MongoDB.get_client()[list(MongoDB.get_client().keys())[0]]
+        from application.api.answer.services.stream_processor import StreamProcessor
+        from application.core.mongo_db import MongoDB
+
+        db = MongoDB.get_client()[next(iter(MongoDB.get_client().keys()))]
         tool_doc = {
             "_id": ObjectId(),
             "name": "memory",
@@ -769,11 +771,12 @@ class TestStreamProcessorPromptRendering:
     def test_pre_fetch_tools_memory_returns_error(self, mock_mongo_db):
         from unittest.mock import MagicMock, patch
 
-        from application.api.answer.services.stream_processor import StreamProcessor
-        from application.core.mongo_db import MongoDB
         from bson import ObjectId
 
-        db = MongoDB.get_client()[list(MongoDB.get_client().keys())[0]]
+        from application.api.answer.services.stream_processor import StreamProcessor
+        from application.core.mongo_db import MongoDB
+
+        db = MongoDB.get_client()[next(iter(MongoDB.get_client().keys()))]
         tool_doc = {
             "_id": ObjectId(),
             "name": "memory",
@@ -810,11 +813,12 @@ class TestStreamProcessorPromptRendering:
     def test_pre_fetch_tools_memory_returns_empty(self, mock_mongo_db):
         from unittest.mock import MagicMock, patch
 
-        from application.api.answer.services.stream_processor import StreamProcessor
-        from application.core.mongo_db import MongoDB
         from bson import ObjectId
 
-        db = MongoDB.get_client()[list(MongoDB.get_client().keys())[0]]
+        from application.api.answer.services.stream_processor import StreamProcessor
+        from application.core.mongo_db import MongoDB
+
+        db = MongoDB.get_client()[next(iter(MongoDB.get_client().keys()))]
         tool_doc = {
             "_id": ObjectId(),
             "name": "memory",

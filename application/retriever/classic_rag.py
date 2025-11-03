@@ -8,6 +8,9 @@ from application.utils import num_tokens_from_string
 from application.vectorstore.vector_creator import VectorCreator
 
 
+logger = logging.getLogger(__name__)
+
+
 class ClassicRAG(BaseRetriever):
     def __init__(
         self,
@@ -29,14 +32,14 @@ class ClassicRAG(BaseRetriever):
             try:
                 self.chunks = int(chunks)
             except ValueError:
-                logging.warning(
+                logger.warning(
                     f"Invalid chunks value '{chunks}', using default value 2"
                 )
                 self.chunks = 2
         else:
             self.chunks = chunks
         user_identifier = user_api_key if user_api_key else "default"
-        logging.info(
+        logger.info(
             f"ClassicRAG initialized with chunks={self.chunks}, user_api_key={user_identifier}, "
             f"sources={'active_docs' in source and source['active_docs'] is not None}"
         )
@@ -66,13 +69,13 @@ class ClassicRAG(BaseRetriever):
     def _validate_vectorstore_config(self):
         """Validate vectorstore IDs and remove any empty/invalid entries"""
         if not self.vectorstores:
-            logging.warning("No vectorstores configured for retrieval")
+            logger.warning("No vectorstores configured for retrieval")
             return
         invalid_ids = [
             vs_id for vs_id in self.vectorstores if not vs_id or not vs_id.strip()
         ]
         if invalid_ids:
-            logging.warning(f"Found invalid vectorstore IDs: {invalid_ids}")
+            logger.warning(f"Found invalid vectorstore IDs: {invalid_ids}")
             self.vectorstores = [
                 vs_id for vs_id in self.vectorstores if vs_id and vs_id.strip()
             ]
@@ -104,12 +107,12 @@ class ClassicRAG(BaseRetriever):
             print(f"Rephrased query: {rephrased_query}")
             return rephrased_query if rephrased_query else self.original_question
         except Exception as e:
-            logging.error(f"Error rephrasing query: {e}", exc_info=True)
+            logger.exception(f"Error rephrasing query: {e}")
             return self.original_question
 
     def _get_data(self):
         if self.chunks == 0 or not self.vectorstores:
-            logging.info(
+            logger.info(
                 f"ClassicRAG._get_data: Skipping retrieval - chunks={self.chunks}, "
                 f"vectorstores_count={len(self.vectorstores) if self.vectorstores else 0}"
             )
@@ -179,13 +182,12 @@ class ClassicRAG(BaseRetriever):
                         break
 
                 except Exception as e:
-                    logging.error(
-                        f"Error searching vectorstore {vectorstore_id}: {e}",
-                        exc_info=True,
+                    logger.exception(
+                        f"Error searching vectorstore {vectorstore_id}: {e}"
                     )
                     continue
 
-        logging.info(
+        logger.info(
             f"ClassicRAG._get_data: Retrieval complete - retrieved {len(all_docs)} documents "
             f"(requested chunks={self.chunks}, chunks_per_source={chunks_per_source}, "
             f"cumulative_tokens={cumulative_tokens}/{token_budget})"

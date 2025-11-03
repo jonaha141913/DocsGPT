@@ -4,7 +4,7 @@ import os
 
 from bson.objectid import ObjectId
 from flask import current_app, jsonify, make_response, request
-from flask_restx import fields, Namespace, Resource
+from flask_restx import Namespace, Resource, fields
 
 from application.api import api
 from application.api.user.base import agents_collection, storage
@@ -75,7 +75,7 @@ class StoreAttachment(Resource):
                 try:
                     attachment_id = ObjectId()
                     original_filename = safe_filename(os.path.basename(file.filename))
-                    relative_path = f"{settings.UPLOAD_FOLDER}/{user}/attachments/{str(attachment_id)}/{original_filename}"
+                    relative_path = f"{settings.UPLOAD_FOLDER}/{user}/attachments/{attachment_id}/{original_filename}"
 
                     metadata = storage.save_file(file, relative_path)
                     file_info = {
@@ -91,8 +91,8 @@ class StoreAttachment(Resource):
                         "filename": original_filename,
                         "attachment_id": str(attachment_id),
                     })
-                except Exception as file_err:
-                    current_app.logger.error(f"Error processing file {idx} ({file.filename}): {file_err}", exc_info=True)
+                except Exception as file_err:  # noqa: BLE001
+                    current_app.logger.exception(f"Error processing file {idx} ({file.filename}): {file_err}")
                     errors.append({
                         "filename": file.filename,
                         "error": str(file_err)
@@ -133,8 +133,8 @@ class StoreAttachment(Resource):
                     jsonify(response_data),
                     200,
                 )
-        except Exception as err:
-            current_app.logger.error(f"Error storing attachment: {err}", exc_info=True)
+        except Exception as err:  # noqa: BLE001
+            current_app.logger.exception(f"Error storing attachment: {err}")
             return make_response(jsonify({"success": False, "error": str(err)}), 400)
 
 
@@ -157,7 +157,7 @@ class ServeImage(Resource):
             return make_response(
                 jsonify({"success": False, "message": "Image not found"}), 404
             )
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             current_app.logger.error(f"Error serving image: {e}")
             return make_response(
                 jsonify({"success": False, "message": "Error retrieving image"}), 500
@@ -193,6 +193,6 @@ class TextToSpeech(Resource):
                 ),
                 200,
             )
-        except Exception as err:
-            current_app.logger.error(f"Error synthesizing audio: {err}", exc_info=True)
+        except Exception as err:  # noqa: BLE001
+            current_app.logger.exception(f"Error synthesizing audio: {err}")
             return make_response(jsonify({"success": False}), 400)
