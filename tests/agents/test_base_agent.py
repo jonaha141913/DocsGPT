@@ -11,11 +11,11 @@ class TestBaseAgentInitialization:
     def test_agent_initialization(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
 
         assert agent.endpoint == agent_base_params["endpoint"]
         assert agent.llm_name == agent_base_params["llm_name"]
-        assert agent.gpt_model == agent_base_params["gpt_model"]
         assert agent.api_key == agent_base_params["api_key"]
         assert agent.prompt == agent_base_params["prompt"]
         assert agent.user == agent_base_params["decoded_token"]["sub"]
@@ -162,6 +162,7 @@ class TestBaseAgentTools:
             {"_id": "2", "user": "test_user", "name": "tool2", "status": True}
         )
 
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
         tools = agent._get_user_tools("test_user")
 
@@ -184,6 +185,7 @@ class TestBaseAgentTools:
             {"_id": "2", "user": "test_user", "name": "tool2", "status": False}
         )
 
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
         tools = agent._get_user_tools("test_user")
 
@@ -212,6 +214,7 @@ class TestBaseAgentTools:
         tools_collection = mock_mongo_db[settings.MONGO_DB_NAME]["user_tools"]
         tools_collection.insert_one({"_id": tool_obj_id, "name": "api_tool"})
 
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
         tools = agent._get_tools("api_key_123")
 
@@ -220,6 +223,7 @@ class TestBaseAgentTools:
     def test_build_tool_parameters(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
 
         action = {

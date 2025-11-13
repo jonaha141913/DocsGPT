@@ -17,4 +17,8 @@ class AgentCreator:
         if not agent_class:
             raise ValueError(f"No agent class found for type {type}")
         
+        gpt_model = kwargs.pop('gpt_model', None)
+        if gpt_model:
+            kwargs['gpt_model'] = gpt_model
+        
         return agent_class(*args, **kwargs)
