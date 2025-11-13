@@ -108,7 +108,6 @@ class TestConversationServiceSave:
                 sources=[],
                 tool_calls=[],
                 llm=mock_llm,
-                gpt_model="gpt-4",
                 decoded_token={},  # No 'sub' key
             )
 
@@ -136,7 +135,6 @@ class TestConversationServiceSave:
             sources=sources,
             tool_calls=[],
             llm=mock_llm,
-            gpt_model="gpt-4",
             decoded_token={"sub": "user_123"},
         )
 
@@ -167,7 +165,6 @@ class TestConversationServiceSave:
             sources=[],
             tool_calls=[],
             llm=mock_llm,
-            gpt_model="gpt-4",
             decoded_token={"sub": "user_123"},
         )
 
@@ -208,7 +205,6 @@ class TestConversationServiceSave:
             sources=[],
             tool_calls=[],
             llm=mock_llm,
-            gpt_model="gpt-4",
             decoded_token={"sub": "user_123"},
         )
 
@@ -237,6 +233,5 @@ class TestConversationServiceSave:
                 sources=[],
                 tool_calls=[],
                 llm=mock_llm,
-                gpt_model="gpt-4",
                 decoded_token={"sub": "hacker_456"},
             )

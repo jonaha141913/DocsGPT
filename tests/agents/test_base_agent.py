@@ -11,11 +11,11 @@ class TestBaseAgentInitialization:
     def test_agent_initialization(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
 
         assert agent.endpoint == agent_base_params["endpoint"]
         assert agent.llm_name == agent_base_params["llm_name"]
-        assert agent.gpt_model == agent_base_params["gpt_model"]
         assert agent.api_key == agent_base_params["api_key"]
         assert agent.prompt == agent_base_params["prompt"]
         assert agent.user == agent_base_params["decoded_token"]["sub"]
@@ -25,6 +25,7 @@ class TestBaseAgentInitialization:
     def test_agent_initialization_with_none_chat_history(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent_base_params["chat_history"] = None
         agent = ClassicAgent(**agent_base_params)
         assert agent.chat_history == []
@@ -36,6 +37,7 @@ class TestBaseAgentInitialization:
         mock_llm_creator,
         mock_llm_handler_creator,
     ):
+        agent_base_params.pop("gpt_model", None)
         agent_base_params["chat_history"] = sample_chat_history
         agent = ClassicAgent(**agent_base_params)
         assert len(agent.chat_history) == 2
@@ -44,6 +46,7 @@ class TestBaseAgentInitialization:
     def test_agent_decoded_token_defaults_to_empty_dict(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent_base_params["decoded_token"] = None
         agent = ClassicAgent(**agent_base_params)
         assert agent.decoded_token == {}
@@ -52,6 +55,7 @@ class TestBaseAgentInitialization:
     def test_agent_user_extracted_from_token(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent_base_params["decoded_token"] = {"sub": "user123"}
         agent = ClassicAgent(**agent_base_params)
         assert agent.user == "user123"
@@ -63,6 +67,7 @@ class TestBaseAgentBuildMessages:
     def test_build_messages_basic(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
         system_prompt = "System prompt content"
         query = "What is Python?"
@@ -82,6 +87,7 @@ class TestBaseAgentBuildMessages:
         mock_llm_creator,
         mock_llm_handler_creator,
     ):
+        agent_base_params.pop("gpt_model", None)
         agent_base_params["chat_history"] = sample_chat_history
         agent = ClassicAgent(**agent_base_params)
 
@@ -99,6 +105,7 @@ class TestBaseAgentBuildMessages:
     def test_build_messages_with_tool_calls_in_history(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         tool_call_history = [
             {
                 "tool_calls": [
@@ -122,6 +129,7 @@ class TestBaseAgentBuildMessages:
     def test_build_messages_handles_missing_filename(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
 
         messages = agent._build_messages("System prompt", "query")
@@ -132,6 +140,7 @@ class TestBaseAgentBuildMessages:
     def test_build_messages_uses_title_as_fallback(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
 
         agent._build_messages("System prompt", "query")
@@ -139,6 +148,7 @@ class TestBaseAgentBuildMessages:
     def test_build_messages_uses_source_as_fallback(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
 
         agent._build_messages("System prompt", "query")
@@ -154,6 +164,7 @@ class TestBaseAgentTools:
         mock_llm_creator,
         mock_llm_handler_creator,
     ):
+        agent_base_params.pop("gpt_model", None)
         user_tools = mock_mongo_db[settings.MONGO_DB_NAME]["user_tools"]
         user_tools.insert_one(
             {"_id": "1", "user": "test_user", "name": "tool1", "status": True}
@@ -176,6 +187,7 @@ class TestBaseAgentTools:
         mock_llm_creator,
         mock_llm_handler_creator,
     ):
+        agent_base_params.pop("gpt_model", None)
         user_tools = mock_mongo_db[settings.MONGO_DB_NAME]["user_tools"]
         user_tools.insert_one(
             {"_id": "1", "user": "test_user", "name": "tool1", "status": True}
@@ -196,6 +208,7 @@ class TestBaseAgentTools:
         mock_llm_creator,
         mock_llm_handler_creator,
     ):
+        agent_base_params.pop("gpt_model", None)
         from bson.objectid import ObjectId
 
         tool_id = str(ObjectId())
@@ -220,6 +233,7 @@ class TestBaseAgentTools:
     def test_build_tool_parameters(
         self, agent_base_params, mock_llm_creator, mock_llm_handler_creator
     ):
+        agent_base_params.pop("gpt_model", None)
         agent = ClassicAgent(**agent_base_params)
 
         action = {
